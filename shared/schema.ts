@@ -57,5 +57,40 @@ export const achievementsList: Omit<Achievement, "unlockedAt">[] = [
     id: "big_spender",
     name: "Big Spender",
     description: "Balance went below -€10"
+  },
+  {
+    id: "early_bird",
+    name: "Early Bird",
+    description: "Purchased a drink before 9 AM"
+  },
+  {
+    id: "night_owl",
+    name: "Night Owl",
+    description: "Purchased a drink after 10 PM"
+  },
+  {
+    id: "weekend_warrior",
+    name: "Weekend Warrior",
+    description: "Purchased drinks on 3 consecutive weekends"
+  },
+  {
+    id: "responsible_drinker",
+    name: "Responsible Drinker",
+    description: "Deposit money before your balance goes negative"
+  },
+  {
+    id: "marathon_session",
+    name: "Marathon Session",
+    description: "Purchased 5 drinks in a single day"
+  },
+  {
+    id: "loyal_customer",
+    name: "Loyal Customer",
+    description: "Used the system for over 30 days"
+  },
+  {
+    id: "positive_balance",
+    name: "In The Black",
+    description: "Maintained a positive balance for 2 weeks"
   }
 ];

@@ -41,7 +41,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const newAchievements = [...userAchievements];
       const now = new Date().toISOString();
+      const currentHour = new Date().getHours();
+      const currentDay = new Date().getDay();
 
+      // Basic achievements
       if (!userAchievements.find(a => a.id === "first_purchase")) {
         newAchievements.push({ ...achievementsList[0], unlockedAt: now });
       }
@@ -52,6 +55,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (user.balance <= -10 && !userAchievements.find(a => a.id === "big_spender")) {
         newAchievements.push({ ...achievementsList[2], unlockedAt: now });
+      }
+      
+      // Time-based achievements
+      if (currentHour < 9 && !userAchievements.find(a => a.id === "early_bird")) {
+        newAchievements.push({ ...achievementsList[3], unlockedAt: now });
+      }
+      
+      if (currentHour >= 22 && !userAchievements.find(a => a.id === "night_owl")) {
+        newAchievements.push({ ...achievementsList[4], unlockedAt: now });
+      }
+      
+      // Frequency-based achievement
+      const todayTransactions = transactions.filter(t => {
+        const txDate = new Date(t.createdAt);
+        return txDate.toDateString() === new Date().toDateString() && t.type === "PURCHASE";
+      });
+      
+      if (todayTransactions.length >= 5 && !userAchievements.find(a => a.id === "marathon_session")) {
+        newAchievements.push({ ...achievementsList[7], unlockedAt: now });
       }
 
       if (newAchievements.length > userAchievements.length) {
@@ -90,6 +112,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       requireAdmin(req);
       const { userId, amount } = req.body;
 
+      // Get user before update
+      const userBefore = await storage.getUser(userId);
+      
       // Create deposit transaction
       const transaction = await storage.createTransaction({
         userId,
@@ -99,6 +124,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Update user balance
       const user = await storage.updateUserBalance(userId, amount);
+      
+      // Check for Responsible Drinker achievement
+      if (userBefore && userBefore.balance > 0 && !JSON.parse(userBefore.achievements).find((a: any) => a.id === "responsible_drinker")) {
+        const userAchievements = JSON.parse(user.achievements);
+        const newAchievements = [...userAchievements];
+        const now = new Date().toISOString();
+        
+        newAchievements.push({ 
+          ...achievementsList.find(a => a.id === "responsible_drinker"), 
+          unlockedAt: now 
+        });
+        
+        await storage.updateUserAchievements(userId, newAchievements);
+      }
 
       res.json({ transaction, user });
     } catch (err) {

@@ -130,10 +130,18 @@ export default function AdminPage() {
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {achievements.map((achievement: any) => (
-                            <Badge key={achievement.id} variant="outline" className="text-xs">
+                            <Badge 
+                              key={achievement.id} 
+                              variant="outline" 
+                              className="text-xs hover:bg-accent cursor-help"
+                              title={`${achievement.description} - Unlocked: ${achievement.unlockedAt ? new Date(achievement.unlockedAt).toLocaleString() : 'Not yet'}`}
+                            >
                               {achievement.name}
                             </Badge>
                           ))}
+                          {achievements.length === 0 && (
+                            <span className="text-xs text-muted-foreground">No achievements yet</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
