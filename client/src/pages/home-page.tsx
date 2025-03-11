@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Beer, History, Trophy, LogOut, Key } from "lucide-react";
+import { Beer, History, Trophy, LogOut, Key, BarChart } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "wouter";
 import { useState } from "react";
@@ -72,6 +72,12 @@ export default function HomePage() {
                 <Button variant="outline">Admin Panel</Button>
               </Link>
             )}
+            <Link href="/stats">
+              <Button variant="outline">
+                <BarChart className="h-4 w-4 mr-2" />
+                Statistics
+              </Button>
+            </Link>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline">
@@ -96,7 +102,7 @@ export default function HomePage() {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
-                  <Button 
+                  <Button
                     className="w-full"
                     onClick={() => changePasswordMutation.mutate()}
                     disabled={changePasswordMutation.isPending}
@@ -124,8 +130,8 @@ export default function HomePage() {
               <p className={`text-3xl font-bold ${user?.balance! < 0 ? 'text-destructive' : 'text-primary'}`}>
                 €{user?.balance?.toFixed(2)}
               </p>
-              <Button 
-                className="w-full mt-4" 
+              <Button
+                className="w-full mt-4"
                 onClick={() => purchaseMutation.mutate()}
                 disabled={purchaseMutation.isPending}
               >

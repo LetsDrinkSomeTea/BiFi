@@ -45,11 +45,6 @@ export default function StatisticsPage() {
     queryKey: ["/api/transactions"],
   });
 
-  if (!user?.isAdmin) {
-    setLocation("/");
-    return null;
-  }
-
   if (!users || !transactions) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -108,25 +103,27 @@ export default function StatisticsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Users</Label>
-              <Select
-                value={selectedUsers.join(",")}
-                onValueChange={(value) => setSelectedUsers(value ? value.split(",") : [])}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Users" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All Users</SelectItem>
-                  {users.map((u) => (
-                    <SelectItem key={u.id} value={u.id.toString()}>
-                      {u.username}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {user?.isAdmin && (
+              <div className="space-y-2">
+                <Label>Users</Label>
+                <Select
+                  value={selectedUsers.join(",")}
+                  onValueChange={(value) => setSelectedUsers(value ? value.split(",") : [])}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Users" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Users</SelectItem>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id.toString()}>
+                        {u.username}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -259,28 +256,30 @@ export default function StatisticsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>User Statistics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-8">
-                {stats.users.map((userStat) => (
-                  <div key={userStat.userId} className="space-y-2">
-                    <h3 className="font-medium">{userStat.username}</h3>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>Total Spent: €{userStat.totalSpent.toFixed(2)}</div>
-                      <div>Purchase Count: {userStat.purchaseCount}</div>
-                      <div>Average Time: {userStat.averagePurchaseTime || "N/A"}</div>
-                      <div>Most Active: {userStat.mostActiveDay || "N/A"}</div>
-                      <div>Largest Purchase: €{userStat.largestPurchase.toFixed(2)}</div>
-                      <div>Current Balance: €{userStat.balance.toFixed(2)}</div>
+          {user?.isAdmin && (
+            <Card>
+              <CardHeader>
+                <CardTitle>User Statistics</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-8">
+                  {stats.users.map((userStat) => (
+                    <div key={userStat.userId} className="space-y-2">
+                      <h3 className="font-medium">{userStat.username}</h3>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>Total Spent: €{userStat.totalSpent.toFixed(2)}</div>
+                        <div>Purchase Count: {userStat.purchaseCount}</div>
+                        <div>Average Time: {userStat.averagePurchaseTime || "N/A"}</div>
+                        <div>Most Active: {userStat.mostActiveDay || "N/A"}</div>
+                        <div>Largest Purchase: €{userStat.largestPurchase.toFixed(2)}</div>
+                        <div>Current Balance: €{userStat.balance.toFixed(2)}</div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </main>
     </div>
