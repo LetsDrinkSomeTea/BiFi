@@ -11,23 +11,17 @@ export function ProtectedRoute({
 }) {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) {
-    return (
-      <Route path={path}>
+  return (
+    <Route path={path}>
+      {isLoading ? (
         <div className="flex items-center justify-center min-h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-border" />
         </div>
-      </Route>
-    );
-  }
-
-  if (!user) {
-    return (
-      <Route path={path}>
+      ) : !user ? (
         <Redirect to="/auth" />
-      </Route>
-    );
-  }
-
-  return <Component />
+      ) : (
+        <Component />
+      )}
+    </Route>
+  );
 }
