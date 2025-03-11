@@ -93,12 +93,6 @@ export default function AdminPage() {
               Back to Dashboard
             </Button>
           </Link>
-          <Link href="/stats">
-            <Button variant="ghost">
-              <BarChart className="h-4 w-4 mr-2" />
-              Statistics
-            </Button>
-          </Link>
         </div>
       </header>
 
