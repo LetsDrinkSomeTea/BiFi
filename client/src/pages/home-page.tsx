@@ -143,7 +143,12 @@ export default function HomePage() {
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {achievements.map((achievement) => (
-                  <Badge key={achievement.id} variant="secondary">
+                  <Badge
+                    key={achievement.id}
+                    variant={achievement.unlockedAt ? "default" : "outline"}
+                    className={`${achievement.unlockedAt ? "" : "text-muted-foreground"} cursor-help hover:bg-accent`}
+                    title={`${achievement.description} - Unlocked: ${achievement.unlockedAt ? new Date(achievement.unlockedAt).toLocaleString() : 'Not yet'}`}
+                  >
                     {achievement.name}
                   </Badge>
                 ))}
