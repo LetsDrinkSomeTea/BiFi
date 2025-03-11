@@ -145,8 +145,7 @@ export default function HomePage() {
                 {achievements.map((achievement) => (
                   <Badge
                     key={achievement.id}
-                    variant={achievement.unlockedAt ? "default" : "outline"}
-                    className={`${achievement.unlockedAt ? "" : "text-muted-foreground"} cursor-help hover:bg-accent`}
+                    className={`${achievement.unlockedAt ? "" : "text-muted-foreground"} cursor-help`}
                     title={`${achievement.description} - Unlocked: ${achievement.unlockedAt ? new Date(achievement.unlockedAt).toLocaleString() : 'Not yet'}`}
                   >
                     {achievement.name}

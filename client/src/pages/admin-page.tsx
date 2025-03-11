@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Beer, Users, ArrowLeft, Trash2, Key, CreditCard, ShieldCheck } from "lucide-react";
+import { Beer, Users, ArrowLeft, Trash2, Key, CreditCard, ShieldCheck, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -93,6 +93,12 @@ export default function AdminPage() {
               Back to Dashboard
             </Button>
           </Link>
+          <Link href="/stats">
+            <Button variant="ghost">
+              <BarChart className="h-4 w-4 mr-2" />
+              Statistics
+            </Button>
+          </Link>
         </div>
       </header>
 
@@ -130,9 +136,9 @@ export default function AdminPage() {
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {achievements.map((achievement: any) => (
-                            <Badge 
-                              key={achievement.id} 
-                              variant="outline" 
+                            <Badge
+                              key={achievement.id}
+                              variant="outline"
                               className="text-xs hover:bg-accent cursor-help"
                               title={`${achievement.description} - Unlocked: ${achievement.unlockedAt ? new Date(achievement.unlockedAt).toLocaleString() : 'Not yet'}`}
                             >
