@@ -1,6 +1,6 @@
 import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { storage } from "./storage";
 import { achievementsList } from "@shared/schema";
 
@@ -24,7 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       requireAuth(req);
       const userId = req.user!.id;
-      
+
       // Create transaction
       const transaction = await storage.createTransaction({
         userId,
@@ -38,7 +38,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check and update achievements
       const transactions = await storage.getTransactions(userId);
       const userAchievements = JSON.parse(user.achievements) as typeof achievementsList;
-      
+
       const newAchievements = [...userAchievements];
       const now = new Date().toISOString();
 
@@ -79,6 +79,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
       requireAdmin(req);
       const users = await storage.getAllUsers();
       res.json(users);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  // New Admin Routes
+  app.post("/api/admin/deposit", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const { userId, amount } = req.body;
+
+      // Create deposit transaction
+      const transaction = await storage.createTransaction({
+        userId,
+        amount,
+        type: "DEPOSIT"
+      });
+
+      // Update user balance
+      const user = await storage.updateUserBalance(userId, amount);
+
+      res.json({ transaction, user });
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.post("/api/admin/reset-password", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const { userId, newPassword } = req.body;
+      const user = await storage.updateUserPassword(userId, await hashPassword(newPassword));
+      res.json(user);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", async (req, res) => {
+    try {
+      requireAdmin(req);
+      await storage.deleteUser(parseInt(req.params.id));
+      res.sendStatus(200);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const { isAdmin } = req.body;
+      const user = await storage.updateUser(parseInt(req.params.id), { isAdmin });
+      res.json(user);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  // User password change route
+  app.post("/api/change-password", async (req, res) => {
+    try {
+      requireAuth(req);
+      const { currentPassword, newPassword } = req.body;
+
+      // Verify current password
+      const user = await storage.getUserByUsername(req.user!.username);
+      if (!user || !(await comparePasswords(currentPassword, user.password))) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+
+      // Update password
+      const updatedUser = await storage.updateUserPassword(user.id, await hashPassword(newPassword));
+      res.json(updatedUser);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
     }

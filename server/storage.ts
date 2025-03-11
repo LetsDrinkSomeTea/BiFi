@@ -10,6 +10,9 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(userId: number, amount: number): Promise<User>;
   updateUserAchievements(userId: number, achievements: Achievement[]): Promise<User>;
+  updateUserPassword(userId: number, hashedPassword: string): Promise<User>;
+  updateUser(userId: number, updates: Partial<User>): Promise<User>;
+  deleteUser(userId: number): Promise<void>;
   getAllUsers(): Promise<User[]>;
   createTransaction(transaction: Omit<Transaction, "id" | "createdAt">): Promise<Transaction>;
   getTransactions(userId: number): Promise<Transaction[]>;
@@ -58,7 +61,7 @@ export class MemStorage implements IStorage {
   async updateUserBalance(userId: number, amount: number): Promise<User> {
     const user = await this.getUser(userId);
     if (!user) throw new Error("User not found");
-    
+
     const updatedUser = {
       ...user,
       balance: user.balance + amount
@@ -70,13 +73,42 @@ export class MemStorage implements IStorage {
   async updateUserAchievements(userId: number, achievements: Achievement[]): Promise<User> {
     const user = await this.getUser(userId);
     if (!user) throw new Error("User not found");
-    
+
     const updatedUser = {
       ...user,
       achievements: JSON.stringify(achievements)
     };
     this.users.set(userId, updatedUser);
     return updatedUser;
+  }
+
+  async updateUserPassword(userId: number, hashedPassword: string): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+
+    const updatedUser = {
+      ...user,
+      password: hashedPassword
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  async updateUser(userId: number, updates: Partial<User>): Promise<User> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+
+    const updatedUser = {
+      ...user,
+      ...updates
+    };
+    this.users.set(userId, updatedUser);
+    return updatedUser;
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    if (!this.users.has(userId)) throw new Error("User not found");
+    this.users.delete(userId);
   }
 
   async getAllUsers(): Promise<User[]> {
