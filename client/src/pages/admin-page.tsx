@@ -114,17 +114,17 @@ export default function AdminPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users?.map((user) => {
-                  const achievements = JSON.parse(user.achievements);
+                {users?.map((u) => {
+                  const achievements = JSON.parse(u.achievements);
                   return (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.username}</TableCell>
-                      <TableCell className={user.balance < 0 ? "text-destructive" : "text-primary"}>
-                        €{user.balance.toFixed(2)}
+                    <TableRow key={u.id}>
+                      <TableCell className="font-medium">{u.username}</TableCell>
+                      <TableCell className={u.balance < 0 ? "text-destructive" : "text-primary"}>
+                        €{u.balance.toFixed(2)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.isAdmin ? "default" : "secondary"}>
-                          {user.isAdmin ? "Admin" : "User"}
+                        <Badge variant={u.isAdmin ? "default" : "secondary"}>
+                          {u.isAdmin ? "Admin" : "User"}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -144,7 +144,7 @@ export default function AdminPage() {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => setSelectedUser(user)}
+                                onClick={() => setSelectedUser(u)}
                               >
                                 <CreditCard className="h-4 w-4" />
                               </Button>
@@ -184,7 +184,7 @@ export default function AdminPage() {
                               <Button
                                 variant="outline"
                                 size="icon"
-                                onClick={() => setSelectedUser(user)}
+                                onClick={() => setSelectedUser(u)}
                               >
                                 <Key className="h-4 w-4" />
                               </Button>
@@ -223,16 +223,16 @@ export default function AdminPage() {
                             variant="outline"
                             size="icon"
                             onClick={() => {
-                              if (user.id !== user?.id) { // Prevent toggling own admin status
+                              if (user.id !== u?.id) { // Prevent toggling own admin status
                                 toggleAdminMutation.mutate({
-                                  userId: user.id,
-                                  isAdmin: !user.isAdmin,
+                                  userId: u.id,
+                                  isAdmin: !u.isAdmin,
                                 });
                               }
                             }}
-                            disabled={user.id === user?.id}
+                            disabled={user.id === u?.id}
                           >
-                            <ShieldCheck className={`h-4 w-4 ${user.isAdmin ? "text-primary" : ""}`} />
+                            <ShieldCheck className={`h-4 w-4 ${u.isAdmin ? "text-primary" : ""}`} />
                           </Button>
 
                           {/* Delete User */}
@@ -241,10 +241,10 @@ export default function AdminPage() {
                             size="icon"
                             onClick={() => {
                               if (confirm("Are you sure you want to delete this user?")) {
-                                deleteUserMutation.mutate(user.id);
+                                deleteUserMutation.mutate(u.id);
                               }
                             }}
-                            disabled={user.id === user?.id}
+                            disabled={user.id === u?.id}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
