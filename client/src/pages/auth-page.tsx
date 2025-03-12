@@ -34,13 +34,13 @@ export default function AuthPage() {
       <div className="flex flex-col-reverse md:flex-row max-w-4xl w-full gap-8">
         <Card className="flex-1">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Welcome to BiFi Strichliste</CardTitle>
+            <CardTitle className="text-2xl font-bold">Willkommen</CardTitle>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" className="space-y-4">
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsTrigger value="login">Anmelden</TabsTrigger>
+                <TabsTrigger value="register">Registrieren</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
@@ -51,7 +51,7 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel>Benutzername</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -64,7 +64,7 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Passwort</FormLabel>
                           <FormControl>
                             <Input type="password" {...field} />
                           </FormControl>
@@ -73,7 +73,7 @@ export default function AuthPage() {
                       )}
                     />
                     <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
-                      Login
+                      Anmelden
                     </Button>
                   </form>
                 </Form>
@@ -87,7 +87,7 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel>Benutzername</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -100,7 +100,7 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Passwort</FormLabel>
                           <FormControl>
                             <Input type="password" {...field} />
                           </FormControl>
@@ -109,7 +109,7 @@ export default function AuthPage() {
                       )}
                     />
                     <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                      Register
+                      Registrieren
                     </Button>
                   </form>
                 </Form>
@@ -117,21 +117,14 @@ export default function AuthPage() {
             </Tabs>
           </CardContent>
         </Card>
-        
+
         <div className="flex-1 text-center md:text-left">
           <div className="space-y-4">
             <Beer className="h-12 w-12 mx-auto md:mx-0 text-primary" />
             <h1 className="text-4xl font-bold">BiFi Strichliste</h1>
             <p className="text-muted-foreground">
-              Track your drinks, manage your balance, and unlock achievements in our
-              trust-based drink management system.
+              Behalte deine Getränke im Blick, verwalte dein Guthaben und schalte Erfolge frei.
             </p>
-            <ul className="space-y-2 text-sm">
-              <li>• One-click drink purchases</li>
-              <li>• Track your balance</li>
-              <li>• Earn achievements</li>
-              <li>• View transaction history</li>
-            </ul>
           </div>
         </div>
       </div>

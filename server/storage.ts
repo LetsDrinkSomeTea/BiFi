@@ -1,4 +1,5 @@
 import { users, transactions, type User, type InsertUser, type Transaction } from "@shared/schema";
+import { type Achievement } from "@shared/achievements";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
@@ -9,7 +10,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(userId: number, amount: number): Promise<User>;
-  updateUserAchievements(userId: number, achievements: string[]): Promise<User>;
+  updateUserAchievements(userId: number, achievements: Achievement[]): Promise<User>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<User>;
   updateUser(userId: number, updates: Partial<User>): Promise<User>;
   deleteUser(userId: number): Promise<void>;
@@ -53,7 +54,7 @@ export class MemStorage implements IStorage {
       ...insertUser,
       id,
       balance: 0,
-      achievements: []
+      achievements: '[]'
     };
     this.users.set(id, user);
     return user;
@@ -71,13 +72,13 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
-  async updateUserAchievements(userId: number, achievements: string[]): Promise<User> {
+  async updateUserAchievements(userId: number, achievements: Achievement[]): Promise<User> {
     const user = await this.getUser(userId);
     if (!user) throw new Error("User not found");
 
     const updatedUser = {
       ...user,
-      achievements
+      achievements: JSON.stringify(achievements)
     };
     this.users.set(userId, updatedUser);
     return updatedUser;

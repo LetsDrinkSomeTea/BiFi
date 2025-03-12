@@ -40,7 +40,7 @@ export default function StatisticsPage() {
   const [timeRange, setTimeRange] = useState("7d");
 
   const { data: personalStats, isLoading: isLoadingPersonal } = useQuery<Statistics>({
-    queryKey: ["/api/stats/user", user?.id, timeRange],
+    queryKey: [`/api/stats/user/${user?.id}`, timeRange],
     enabled: !!user?.id,
   });
 
