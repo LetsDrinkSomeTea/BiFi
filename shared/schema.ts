@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   balance: real("balance").notNull().default(0),
   isAdmin: boolean("is_admin").notNull().default(false),
+  achievements: text("achievements").array().default([]),
 });
 
 export const transactions = pgTable("transactions", {
