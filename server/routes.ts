@@ -216,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.getUser(parseInt(req.params.userId));
       const transactions = await storage.getTransactions(parseInt(req.params.userId));
 
-      const stats = calculateStatistics([user], transactions, {
+      const stats = calculateStatistics([user!], transactions, {
         timeRange: { start, end },
         userIds: [parseInt(req.params.userId)]
       });
