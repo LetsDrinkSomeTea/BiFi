@@ -38,7 +38,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check and update achievements
       const transactions = await storage.getTransactions(userId);
-      const userAchievements = JSON.parse(user.achievements);
+      const userAchievements = JSON.parse(user.achievements!);
 
       const newAchievements = checkForNewAchievements({
         user: {
