@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { storage } from "./storage";
 import { checkForNewAchievements } from "@shared/achievements";
+import { calculateStatistics } from "@shared/statistics/utils";
 
 function requireAuth(req: Request) {
   if (!req.isAuthenticated()) {
@@ -166,6 +167,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update password
       const updatedUser = await storage.updateUserPassword(user.id, await hashPassword(newPassword));
       res.json(updatedUser);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  // New Statistics Routes
+  app.get("/api/stats/system", async (req, res) => {
+    try {
+      requireAuth(req);
+      const end = new Date();
+      const start = new Date(end);
+      start.setDate(end.getDate() - 7); // Default to 7 days
+
+      if (req.query.days) {
+        start.setDate(end.getDate() - parseInt(req.query.days as string));
+      }
+
+      const transactions = await storage.getAllTransactions();
+      const users = await storage.getAllUsers();
+
+      const stats = calculateStatistics(users, transactions, {
+        timeRange: { start, end }
+      });
+
+      res.json(stats);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/stats/user/:userId", async (req, res) => {
+    try {
+      requireAuth(req);
+      // Users can only access their own statistics
+      if (parseInt(req.params.userId) !== req.user!.id) {
+        throw new Error("Forbidden");
+      }
+
+      const end = new Date();
+      const start = new Date(end);
+      start.setDate(end.getDate() - 7); // Default to 7 days
+
+      if (req.query.days) {
+        start.setDate(end.getDate() - parseInt(req.query.days as string));
+      }
+
+      const user = await storage.getUser(parseInt(req.params.userId));
+      const transactions = await storage.getTransactions(parseInt(req.params.userId));
+
+      const stats = calculateStatistics([user], transactions, {
+        timeRange: { start, end },
+        userIds: [parseInt(req.params.userId)]
+      });
+
+      res.json(stats);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
     }

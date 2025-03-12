@@ -1,4 +1,4 @@
-import { users, transactions, type User, type InsertUser, type Transaction, type Achievement } from "@shared/schema";
+import { users, transactions, type User, type InsertUser, type Transaction } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
@@ -9,13 +9,14 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUserBalance(userId: number, amount: number): Promise<User>;
-  updateUserAchievements(userId: number, achievements: Achievement[]): Promise<User>;
+  updateUserAchievements(userId: number, achievements: string[]): Promise<User>;
   updateUserPassword(userId: number, hashedPassword: string): Promise<User>;
   updateUser(userId: number, updates: Partial<User>): Promise<User>;
   deleteUser(userId: number): Promise<void>;
   getAllUsers(): Promise<User[]>;
   createTransaction(transaction: Omit<Transaction, "id" | "createdAt">): Promise<Transaction>;
   getTransactions(userId: number): Promise<Transaction[]>;
+  getAllTransactions(): Promise<Transaction[]>;
   sessionStore: session.Store;
 }
 
@@ -52,7 +53,7 @@ export class MemStorage implements IStorage {
       ...insertUser,
       id,
       balance: 0,
-      achievements: '[]'
+      achievements: []
     };
     this.users.set(id, user);
     return user;
@@ -70,13 +71,13 @@ export class MemStorage implements IStorage {
     return updatedUser;
   }
 
-  async updateUserAchievements(userId: number, achievements: Achievement[]): Promise<User> {
+  async updateUserAchievements(userId: number, achievements: string[]): Promise<User> {
     const user = await this.getUser(userId);
     if (!user) throw new Error("User not found");
 
     const updatedUser = {
       ...user,
-      achievements: JSON.stringify(achievements)
+      achievements
     };
     this.users.set(userId, updatedUser);
     return updatedUser;
@@ -129,6 +130,11 @@ export class MemStorage implements IStorage {
   async getTransactions(userId: number): Promise<Transaction[]> {
     return Array.from(this.transactions.values())
       .filter(t => t.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getAllTransactions(): Promise<Transaction[]> {
+    return Array.from(this.transactions.values())
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 }

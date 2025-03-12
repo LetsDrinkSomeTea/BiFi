@@ -1,13 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { Transaction } from "@shared/schema";
-import {
-  calculateStatistics,
-} from "@shared/statistics/utils";
-import {
-  StatisticsFilters,
-} from "@shared/statistics/types";
-
+import { Statistics } from "@shared/statistics/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -35,52 +28,33 @@ import { de } from "date-fns/locale";
 import { MainNav } from "@/components/main-nav";
 
 const TIME_RANGES = {
-  "24h": { days: 1 },
-  "7d": { days: 7 },
-  "30d": { days: 30 },
-  "90d": { days: 90 },
-  "1y": { days: 365 },
+  "24h": 1,
+  "7d": 7,
+  "30d": 30,
+  "90d": 90,
+  "1y": 365,
 };
 
 export default function StatisticsPage() {
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState("7d");
 
-  const { data: transactions } = useQuery<Transaction[]>({
-    queryKey: ["/api/transactions"],
+  const { data: personalStats, isLoading: isLoadingPersonal } = useQuery<Statistics>({
+    queryKey: ["/api/stats/user", user?.id, timeRange],
+    enabled: !!user?.id,
   });
 
-  if (!transactions) {
+  const { data: systemStats, isLoading: isLoadingSystem } = useQuery<Statistics>({
+    queryKey: ["/api/stats/system", timeRange],
+  });
+
+  if (isLoadingPersonal || isLoadingSystem || !personalStats || !systemStats) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-pulse">Statistiken werden geladen...</div>
       </div>
     );
   }
-
-  const end = new Date();
-  const start = new Date(end);
-  start.setDate(
-    end.getDate() - TIME_RANGES[timeRange as keyof typeof TIME_RANGES].days,
-  );
-
-  // Filter transactions for the current user
-  const userTransactions = transactions.filter(t => t.userId === user?.id);
-
-  // Personal statistics
-  const personalFilters: StatisticsFilters = {
-    timeRange: { start, end },
-    userIds: [user!.id],
-  };
-
-  // System-wide statistics
-  const systemFilters: StatisticsFilters = {
-    timeRange: { start, end },
-  };
-
-  const personalStats = calculateStatistics([user!], userTransactions, personalFilters);
-  const systemStats = calculateStatistics(transactions, transactions, systemFilters);
-
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,7 +69,6 @@ export default function StatisticsPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Filter */}
         <Card>
           <CardHeader>
             <CardTitle>Filter</CardTitle>
