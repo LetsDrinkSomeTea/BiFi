@@ -28,7 +28,10 @@ export default function HomePage() {
     },
   });
 
-  const achievements = user ? JSON.parse(user.achievements) : [];
+  const achievements = user ? 
+    (Array.isArray(user.achievements) ? user.achievements : 
+      (typeof user.achievements === 'string' ? 
+        (user.achievements ? JSON.parse(user.achievements) : []) : [])) : [];
 
   return (
     <div className="min-h-screen bg-background">
