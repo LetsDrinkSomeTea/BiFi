@@ -1,7 +1,7 @@
 import { Transaction, User } from "../schema";
-import { Statistics, StatisticsFilters, TimeRange, UserStatistics, TimeStatistics, DayOfWeekStatistics, HourlyStatistics } from "./types";
+import { CountByItem, Statistics, StatisticsFilters, TimeRange, UserStatistics, TimeStatistics, DayOfWeekStatistics, HourlyStatistics } from "./types";
 
-const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS_OF_WEEK = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 function isInTimeRange(date: Date, range: TimeRange): boolean {
   return date >= range.start && date <= range.end;
@@ -18,12 +18,18 @@ function calculateUserStatistics(
   const purchases = userTransactions.filter(t => t.type === 'PURCHASE');
   const deposits = userTransactions.filter(t => t.type === 'DEPOSIT');
 
+  const purchasesByItem = new Map<number, number>();
   // Calculate most active day
   const dayCount = new Map<string, number>();
   purchases.forEach(p => {
     const day = DAYS_OF_WEEK[new Date(p.createdAt).getDay()];
     dayCount.set(day, (dayCount.get(day) || 0) + 1);
+    if(p.item) {purchasesByItem.set(p.item, (purchasesByItem.get(p.item) || 0) + 1);}
   });
+
+  const ByItem: CountByItem[] = Array.from(purchasesByItem.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([itemId, count]) => ({itemId, count}));
 
   let mostActiveDay = null;
   let maxCount = 0;
@@ -55,10 +61,9 @@ function calculateUserStatistics(
     totalDeposited: deposits.reduce((sum, t) => sum + t.amount, 0),
     balance: user.balance,
     purchaseCount: purchases.length,
+    purchaseCountByItem: ByItem,
     averagePurchaseTime,
     mostActiveDay,
-    largestPurchase: Math.abs(Math.min(...purchases.map(t => t.amount), 0)),
-    largestDeposit: Math.max(...deposits.map(t => t.amount), 0),
   };
 }
 
@@ -154,7 +159,7 @@ export function calculateStatistics(
     ? users.filter(u => filters.userIds!.includes(u.id))
     : users;
 
-  const userStats = filteredUsers.map(user => 
+  const userStats = filteredUsers.map(user =>
     calculateUserStatistics(user, transactions, filters.timeRange)
   );
 

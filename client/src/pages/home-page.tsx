@@ -34,6 +34,7 @@ export default function HomePage() {
     return map;
   }, [buyables]);
 
+
   // Filter für Buyables mit id 4 ... n
   const otherBuyables = React.useMemo(() => {
     return buyables ? buyables.filter((b) => b.id >= 4 && !b.deleted).sort((a,b) => a.name.localeCompare(b.name)) : [];

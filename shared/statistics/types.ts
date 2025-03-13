@@ -15,8 +15,15 @@ export interface UserStatistics {
   totalDeposited: number;
   balance: number;
   purchaseCount: number;
+  purchaseCountByItem: CountByItem[];
   averagePurchaseTime: string | null;
   mostActiveDay: string | null;
+}
+
+export interface CountByItem {
+  itemId: number;
+  name?: string;
+  count: number;
 }
 
 export interface TimeStatistics {
