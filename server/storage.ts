@@ -125,7 +125,7 @@ export class DrizzleStorage implements IStorage {
         .values({
           userId: transaction.userId,
           amount: transaction.amount,
-          item: transaction.item || '',
+          item: transaction.item || null,
           type: transaction.type,
           createdAt: new Date(),
         })
@@ -166,7 +166,7 @@ export class DrizzleStorage implements IStorage {
     return result as Buyable[];
   }
 
-  async createBuyable(buyable: Omit<Buyable, "id" | "stock">): Promise<Buyable> {
+  async createBuyable(buyable: Omit<Buyable, "id" | "stock" | "deleted">): Promise<Buyable> {
     const [newBuyable] = await this.db
         .insert(buyables)
         .values({
@@ -174,6 +174,7 @@ export class DrizzleStorage implements IStorage {
           price: buyable.price,
           category: buyable.category,
           stock: 0,
+          deleted: false,
         })
         .returning();
     return newBuyable as Buyable;
@@ -191,9 +192,17 @@ export class DrizzleStorage implements IStorage {
   }
 
   async deleteBuyable(id: number): Promise<void> {
+    await this.updateBuyable(id, { deleted: true });
+  }
+
+  async updateBuyableStock(id: number, amount: number): Promise<Buyable> {
     await this.db
-        .delete(buyables)
+        .update(buyables)
+        .set({ stock: sql`${buyables.stock} + ${amount}` })
         .where(eq(buyables.id, id));
+    const updatedBuyable = await this.getBuyable(id);
+    if (!updatedBuyable) throw new Error("Buyable not found");
+    return updatedBuyable;
   }
 }
 

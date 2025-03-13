@@ -25,18 +25,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       requireAuth(req);
       const userId = req.user!.id;
-      const { amount, item } = req.body;
+      const { buyableId } = req.body;
+
+      const buyable = await storage.getBuyable(buyableId);
+      if (!buyable) {throw new Error("Buyable not found")}
 
       // Create transaction
       const transaction = await storage.createTransaction({
         userId,
-        amount: -amount,
-        item: item,
+        amount: -buyable!.price,
+        item: buyable!.id,
         type: "PURCHASE"
       });
 
       // Update balance
-      const user = await storage.updateUserBalance(userId, -amount);
+      const user = await storage.updateUserBalance(userId, -buyable!.price);
+      await storage.updateBuyableStock(buyableId, -1);
 
       // Check and update achievements
       const transactions = await storage.getTransactions(userId);
@@ -305,6 +309,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const updates = req.body;
       const buyable = await storage.updateBuyable(id, updates);
+      res.json(buyable);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.patch("/api/admin/buyables/:id/restock", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        throw new Error("Ungültige ID");
+      }
+      const {amount} = req.body;
+      const buyable = await storage.updateBuyableStock(id, amount);
       res.json(buyable);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });

@@ -20,7 +20,7 @@ import {
 import {Trash2, Plus, Edit, Package} from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { MainNav } from "@/components/main-nav";
@@ -46,6 +46,7 @@ export default function InventoryPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isRestockDialogOpen, setIsRestockDialogOpen] = useState(false);
 
   const [selectedBuyable, setSelectedBuyable] = useState<Buyable | null>(null);
   const [selectedBuyableForDeletion, setSelectedBuyableForDeletion] = useState<Buyable | null>(null);
@@ -57,10 +58,11 @@ export default function InventoryPage() {
   const [newBuyableCategory, setNewBuyableCategory] = useState("");
 
   // Felder für "Buyable bearbeiten"
-  const [editBuyableName, setEditBuyableName] = useState("");
   const [editBuyablePrice, setEditBuyablePrice] = useState("");
   const [editBuyableStock, setEditBuyableStock] = useState("");
   const [editBuyableCategory, setEditBuyableCategory] = useState("");
+
+  const [restockAmount, setRestockAmount] = useState("");
 
   // Mutation zum Erstellen eines neuen Buyables
   const createBuyableMutation = useMutation({
@@ -92,18 +94,16 @@ export default function InventoryPage() {
   const editBuyableMutation = useMutation({
     mutationFn: async ({
                          id,
-                         name,
                          price,
                          stock,
                          category,
                        }: {
       id: number;
-      name: string;
       price: number;
       stock: number;
       category: string;
     }) => {
-      await apiRequest("PATCH", `/api/admin/buyables/${id}`, { name, price, stock, category });
+      await apiRequest("PATCH", `/api/admin/buyables/${id}`, { price, stock, category });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/buyables"] });
@@ -125,6 +125,19 @@ export default function InventoryPage() {
       setSelectedBuyableForDeletion(null);
     },
   });
+
+  // Mutation zum restocken eines Buyables
+  const restockBuyableMutation = useMutation({
+    mutationFn: async ({id, amount} : {id: number, amount: number}) => {
+      await apiRequest("PATCH", `/api/admin/buyables/${id}/restock`, {amount});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/buyables"] });
+      toast({ title: "Buyable erfolgreich aufgestockt" });
+      setIsRestockDialogOpen(false);
+      setSelectedBuyable(null);
+    }
+  })
 
   return (
       <div className="min-h-screen bg-background">
@@ -210,32 +223,18 @@ export default function InventoryPage() {
                 </TableHeader>
                 <TableBody>
                   {buyables
-                      ?.sort((a, b) => a.name.localeCompare(b.name))
+                      ?.filter((b) => {return !b.deleted}).sort((a, b) => a.name.localeCompare(b.name))
                       .map((b) => (
                           <TableRow key={b.id}>
                             <TableCell className="font-medium">{b.name}</TableCell>
-                            <TableCell>€{b.price.toFixed(2)}</TableCell>
-                            <TableCell>{b.stock}</TableCell>
+                            <TableCell>{b.price.toFixed(2)}€</TableCell>
+                            <TableCell className={b.stock < 10 ? "text-destructive" : "text-primary"}>{b.stock}</TableCell>
                             <TableCell>{b.category}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                {/* Bearbeiten */}
-                                <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => {
-                                      setSelectedBuyable(b);
-                                      setEditBuyableName(b.name);
-                                      setEditBuyablePrice(b.price.toString());
-                                      setEditBuyableStock(b.stock.toString());
-                                      setEditBuyableCategory(b.category);
-                                      setIsEditDialogOpen(true);
-                                    }}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </Button>
-                                {/* Löschen */}
-                                {b.id > 3 ? (<Button
+                                {/* Löschen Button*/}
+                                {b.id > 3 ? ( // Bier, Wein und Softdrinks können nicht gelöscht werden
+                                    <Button
                                     variant="outline"
                                     size="icon"
                                     onClick={() => {
@@ -246,6 +245,31 @@ export default function InventoryPage() {
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>) : ''
                                 }
+                                {/* Aufstocken */}
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                      setSelectedBuyable(b);
+                                      setIsRestockDialogOpen(true)
+                                    }}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                      setSelectedBuyable(b);
+                                      setEditBuyablePrice(b.price.toString());
+                                      setEditBuyableStock(b.stock.toString());
+                                      setEditBuyableCategory(b.category);
+                                      setIsEditDialogOpen(true);
+                                    }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                {/* Löschen */}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -271,35 +295,38 @@ export default function InventoryPage() {
                     <DialogTitle>Buyable bearbeiten – {selectedBuyable.name}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
-                    <Input
-                        placeholder="Name"
-                        value={editBuyableName}
-                        onChange={(e) => setEditBuyableName(e.target.value)}
-                    />
+                    <div className="flex-col gap-2">
+                      <div className="flex text-muted-foreground text-sm">Preis</div>
                     <Input
                         type="number"
                         placeholder="Preis"
                         value={editBuyablePrice}
                         onChange={(e) => setEditBuyablePrice(e.target.value)}
                     />
+                    </div>
+                    <div className="flex-col gap-2">
+                      <div className="flex text-muted-foreground text-sm">Lagerbestand</div>
                     <Input
                         type="number"
                         placeholder="Lagerbestand"
                         value={editBuyableStock}
                         onChange={(e) => setEditBuyableStock(e.target.value)}
                     />
+                    </div>
+                      <div className="flex-col gap-2">
+                        <div className="flex text-muted-foreground text-sm">Kategorie</div>
                     <Input
                         placeholder="Kategorie"
                         value={editBuyableCategory}
                         onChange={(e) => setEditBuyableCategory(e.target.value)}
                     />
+                      </div>
                     <Button
                         className="w-full"
                         onClick={() => {
                           if (selectedBuyable) {
                             editBuyableMutation.mutate({
                               id: selectedBuyable.id,
-                              name: editBuyableName,
                               price: parseFloat(editBuyablePrice),
                               stock: parseInt(editBuyableStock),
                               category: editBuyableCategory,
@@ -347,6 +374,49 @@ export default function InventoryPage() {
                           disabled={deleteBuyableMutation.isPending}
                       >
                         Löschen
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+          )}
+          {/* Dialog für Restock */}
+          {selectedBuyable && (
+              <Dialog
+                  open={isRestockDialogOpen}
+                  onOpenChange={(open) => {
+                    if (!open) {
+                      setSelectedBuyable(null);
+                    }
+                    setIsRestockDialogOpen(open);
+                  }}
+              >
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Lagerbestand aufstocken - {selectedBuyable.name}</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <div className="flex-col gap-2">
+                      <div className="flex text-muted-foreground text-sm">Aufstocken um</div>
+                      <Input
+                          type="number"
+                          placeholder="Stückzahl"
+                          value={restockAmount}
+                          onChange={(e) => setRestockAmount(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <DialogTrigger asChild>
+                        <Button variant="outline">Abbrechen</Button>
+                      </DialogTrigger>
+                      <Button
+                          variant="default"
+                          onClick={() =>
+                              restockBuyableMutation.mutate({id: selectedBuyable.id, amount: parseInt(restockAmount)})
+                          }
+                          disabled={deleteBuyableMutation.isPending}
+                      >
+                        Aufstocken
                       </Button>
                     </div>
                   </div>

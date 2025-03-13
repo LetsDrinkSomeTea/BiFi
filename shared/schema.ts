@@ -23,7 +23,7 @@ export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   amount: real("amount").notNull(),
-  item: text("item").default(""),
+  item: integer("item"),
   type: text("type").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -34,6 +34,7 @@ export const buyables = pgTable("buyables", {
   price: real("price").notNull(),
   category: text("category").notNull(),
   stock: integer("stock").notNull().default(0),
+  deleted: boolean("deleted").notNull().default(false),
 })
 
 export const insertUserSchema = createInsertSchema(users).pick({
