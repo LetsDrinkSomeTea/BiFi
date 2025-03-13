@@ -133,14 +133,14 @@ export const achievements = [
   defineAchievement({
     id: "geisterstunde",
     name: "Geisterstunde",
-    description: "Ein Getränk zwischen 23:55 und 00:05 gekauft.",
+    description: "Ein Getränk zwischen 23:59 und 00:01 gekauft.",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
       const date = new Date(currentTransaction.createdAt);
       const berlinDate = new Date(date.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
       const hour = berlinDate.getHours();
       const minute = berlinDate.getMinutes();
-      return (hour === 23 && minute >= 55) || (hour === 0 && minute < 5);
+      return (hour === 23 && minute >= 59) || (hour === 0 && minute < 1);
     }
   }),
   defineAchievement({
