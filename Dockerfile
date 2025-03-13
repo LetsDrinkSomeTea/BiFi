@@ -1,5 +1,5 @@
 # Builder-Stage: Installiere alle Abhängigkeiten und erstelle den Build
-FROM node:18-alpine AS builder
+FROM node:23-alpine AS builder
 
 # Arbeitsverzeichnis festlegen
 WORKDIR /app
@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Runner-Stage: Nur die Produktionsabhängigkeiten und den erstellten Code übernehmen
-FROM node:18-alpine AS runner
+FROM node:23-alpine AS runner
 
 WORKDIR /app
 
