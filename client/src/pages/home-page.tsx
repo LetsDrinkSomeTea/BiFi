@@ -9,6 +9,9 @@ import {Beer, GlassWater, History, Trophy, Wine} from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { MainNav } from "@/components/main-nav";
+import {Tooltip, TooltipProvider, TooltipTrigger, TooltipContent} from "@/components/ui/tooltip.tsx";
+import {AchievementBadge} from "@/components/ui/achievement-badge.tsx";
+import React from "react";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -27,6 +30,8 @@ export default function HomePage() {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
     },
   });
+
+  const [activeTooltipId, setActiveTooltipId] = React.useState<string | null>(null);
 
   const achievements = user ? JSON.parse(user.achievements) : [];
 
@@ -87,13 +92,7 @@ export default function HomePage() {
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 {achievements.map((achievement: any) => (
-                  <Badge
-                    key={achievement.id}
-                    className={`${achievement.unlockedAt ? "" : "text-muted-foreground"} cursor-help`}
-                    title={`${achievement.description}${achievement.unlockedAt ? ` - Freigeschaltet: ${new Date(achievement.unlockedAt).toLocaleString('de-DE')}` : ''}`}
-                  >
-                    {achievement.name}
-                  </Badge>
+                    <AchievementBadge achievement={achievement} activeTooltipId={activeTooltipId} setActiveTooltipId={setActiveTooltipId} key={achievement.id} />
                 ))}
               </div>
             </CardContent>
@@ -107,14 +106,17 @@ export default function HomePage() {
             <CardContent>
               <div className="space-y-2">
                 {transactions?.slice(0, 5).map((transaction) => (
-                  <div key={transaction.id} className="flex justify-between items-center">
-                    <div className="text-sm text-muted-foreground">
-                      {format(new Date(transaction.createdAt), "d. MMM, HH:mm", { locale: de })}
+                    <div key={transaction.id} className="flex justify-between">
+                      <div className="text-sm text-muted-foreground w-32">
+                        {format(new Date(transaction.createdAt), "d. MMM, HH:mm", {locale: de})}
+                      </div>
+                      <div className="text-sm text-foreground flex-1">
+                        {transaction.item}
+                      </div>
+                      <div className={transaction.amount < 0 ? "text-destructive" : "text-primary"}>
+                        €{transaction.amount.toFixed(2)}
+                      </div>
                     </div>
-                    <div className={transaction.amount < 0 ? "text-destructive" : "text-primary"}>
-                      €{transaction.amount.toFixed(2)}
-                    </div>
-                  </div>
                 ))}
               </div>
             </CardContent>
