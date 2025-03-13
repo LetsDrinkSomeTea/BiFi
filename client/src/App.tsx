@@ -8,6 +8,7 @@ import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import AdminPage from "@/pages/admin-page";
 import StatisticsPage from "@/pages/statistics-page";
+import InventoryPage from "@/pages/inventory-page"
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -16,6 +17,7 @@ function Router() {
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/stats" component={StatisticsPage} />
+      <ProtectedRoute path={"/inventory"} component={InventoryPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

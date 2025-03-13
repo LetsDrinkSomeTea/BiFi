@@ -1,0 +1,23 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=yourusername
+      - POSTGRES_PASSWORD=yourpassword
+      - POSTGRES_DB=yourdbname
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    environment:
+      - DATABASE_URL=postgresql://yourusername:yourpassword@db:5432/yourdbname
+    depends_on:
+      - db
+    ports:
+      - "5000:5000"
+
+volumes:
+  pgdata:

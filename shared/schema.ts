@@ -28,18 +28,21 @@ export const transactions = pgTable("transactions", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const buyables = pgTable("buyables", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  price: real("price").notNull(),
+  category: text("category").notNull(),
+  stock: integer("stock").notNull().default(0),
+})
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   isAdmin: true,
 });
 
-export const insertTransactionSchema = createInsertSchema(transactions).pick({
-  userId: true,
-  amount: true,
-  type: true,
-});
-
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
+export type Buyable = typeof buyables.$inferSelect;

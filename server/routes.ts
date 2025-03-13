@@ -255,5 +255,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Öffentliche Routen für Buyables
+  app.get("/api/buyables", async (req, res) => {
+    try {
+      const buyables = await storage.getAllBuyables();
+      res.json(buyables);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/buyables/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        throw new Error("Ungültige ID");
+      }
+      const buyable = await storage.getBuyable(id);
+      if (!buyable) {
+        return res.status(404).json({ error: "Buyable nicht gefunden" });
+      }
+      res.json(buyable);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+// Admin-Routen für Buyables (Create, Update, Delete)
+  app.post("/api/admin/buyables", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const { name, price, category } = req.body;
+      if (!name || price == null || !category) {
+        throw new Error("Erforderliche Felder fehlen: name, price, category");
+      }
+      const buyable = await storage.createBuyable({ name, price, category });
+      res.json(buyable);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.patch("/api/admin/buyables/:id", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        throw new Error("Ungültige ID");
+      }
+      const updates = req.body;
+      const buyable = await storage.updateBuyable(id, updates);
+      res.json(buyable);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.delete("/api/admin/buyables/:id", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        throw new Error("Ungültige ID");
+      }
+      await storage.deleteBuyable(id);
+      res.sendStatus(200);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
   return createServer(app);
 }

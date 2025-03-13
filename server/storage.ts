@@ -1,10 +1,13 @@
-import { type User, type InsertUser, type Transaction } from "@shared/schema";
-import { type Achievement } from "@shared/achievements";
-import session from "express-session";
-import createMemoryStore from "memorystore";
+import 'dotenv/config';
+import db from './db';
+import {desc, eq, sql} from 'drizzle-orm';
 
-const MemoryStore = createMemoryStore(session);
+// Import your table definitions from your DB schema
+import {users, transactions, buyables} from '@shared/schema';
+import { type User, type InsertUser, type Transaction, type Buyable } from '@shared/schema';
+import { type Achievement } from '@shared/achievements';
 
+// Define the storage interface (same as before)
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -15,130 +18,185 @@ export interface IStorage {
   updateUser(userId: number, updates: Partial<User>): Promise<User>;
   deleteUser(userId: number): Promise<void>;
   getAllUsers(): Promise<User[]>;
+
   createTransaction(transaction: Omit<Transaction, "id" | "createdAt">): Promise<Transaction>;
   getTransactions(userId: number): Promise<Transaction[]>;
   getAllTransactions(): Promise<Transaction[]>;
-  sessionStore: session.Store;
+
+  getBuyable(id: number): Promise<Buyable | undefined>;
+  getAllBuyables(): Promise<Buyable[]>;
+  createBuyable(buyable: Omit<Buyable, "id">): Promise<Buyable>;
+  updateBuyable(id: number, updates: Partial<Buyable>): Promise<Buyable>;
+  deleteBuyable(id: number): Promise<void>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private transactions: Map<number, Transaction>;
-  private currentUserId: number;
-  private currentTransactionId: number;
-  readonly sessionStore: session.Store;
+// Create a class implementing the IStorage interface using Drizzle
+export class DrizzleStorage implements IStorage {
+  private db = db;
 
-  constructor() {
-    this.users = new Map();
-    this.transactions = new Map();
-    this.currentUserId = 1;
-    this.currentTransactionId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000
-    });
-  }
-
+  //------USER-------
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.id, id));
+    return result[0] as User | undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username
-    );
+    const result = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.username, username));
+    return result[0] as User | undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = {
-      ...insertUser,
-      id,
-      balance: 0,
-      achievements: '[]',
-      isAdmin: insertUser.isAdmin || false,
-    };
-    this.users.set(id, user);
-    return user;
+    const [user] = await this.db
+        .insert(users)
+        .values({
+          username: insertUser.username,
+          password: insertUser.password,
+          balance: 0,
+          achievements: '[]',
+          isAdmin: insertUser.isAdmin || false,
+        })
+        .returning();
+    return user as User;
   }
 
   async updateUserBalance(userId: number, amount: number): Promise<User> {
-    const user = await this.getUser(userId);
-    if (!user) throw new Error("User not found");
-
-    const updatedUser = {
-      ...user,
-      balance: user.balance + amount
-    };
-    this.users.set(userId, updatedUser);
+    await this.db
+        .update(users)
+        // Use a raw SQL expression to add the amount to the existing balance
+        .set({ balance: sql`${users.balance} + ${amount}` })
+        .where(eq(users.id, userId));
+    const updatedUser = await this.getUser(userId);
+    if (!updatedUser) throw new Error("User not found");
     return updatedUser;
   }
 
   async updateUserAchievements(userId: number, achievements: Achievement[]): Promise<User> {
-    const user = await this.getUser(userId);
-    if (!user) throw new Error("User not found");
-
-    const updatedUser = {
-      ...user,
-      achievements: JSON.stringify(achievements)
-    };
-    this.users.set(userId, updatedUser);
+    await this.db
+        .update(users)
+        .set({ achievements: JSON.stringify(achievements) })
+        .where(eq(users.id, userId));
+    const updatedUser = await this.getUser(userId);
+    if (!updatedUser) throw new Error("User not found");
     return updatedUser;
   }
 
   async updateUserPassword(userId: number, hashedPassword: string): Promise<User> {
-    const user = await this.getUser(userId);
-    if (!user) throw new Error("User not found");
-
-    const updatedUser = {
-      ...user,
-      password: hashedPassword
-    };
-    this.users.set(userId, updatedUser);
+    await this.db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, userId));
+    const updatedUser = await this.getUser(userId);
+    if (!updatedUser) throw new Error("User not found");
     return updatedUser;
   }
 
   async updateUser(userId: number, updates: Partial<User>): Promise<User> {
-    const user = await this.getUser(userId);
-    if (!user) throw new Error("User not found");
-
-    const updatedUser = {
-      ...user,
-      ...updates
-    };
-    this.users.set(userId, updatedUser);
+    await this.db
+        .update(users)
+        .set(updates)
+        .where(eq(users.id, userId));
+    const updatedUser = await this.getUser(userId);
+    if (!updatedUser) throw new Error("User not found");
     return updatedUser;
   }
 
   async deleteUser(userId: number): Promise<void> {
-    if (!this.users.has(userId)) throw new Error("User not found");
-    this.users.delete(userId);
+    await this.db.delete(users).where(eq(users.id, userId));
   }
 
   async getAllUsers(): Promise<User[]> {
-    return Array.from(this.users.values());
+    const result = await this.db.select().from(users);
+    return result as User[];
   }
 
-  async createTransaction(transaction: Omit<Transaction, "id" | "createdAt">): Promise<Transaction> {
-    const id = this.currentTransactionId++;
-    const newTransaction: Transaction = {
-      ...transaction,
-      id,
-      createdAt: new Date()
-    };
-    this.transactions.set(id, newTransaction);
-    return newTransaction;
+  //------Transaction-------
+
+  async createTransaction(
+      transaction: Omit<Transaction, "id" | "createdAt">
+  ): Promise<Transaction> {
+    const [newTransaction] = await this.db
+        .insert(transactions)
+        .values({
+          userId: transaction.userId,
+          amount: transaction.amount,
+          item: transaction.item || '',
+          type: transaction.type,
+          createdAt: new Date(),
+        })
+        .returning();
+    return newTransaction as Transaction;
   }
 
   async getTransactions(userId: number): Promise<Transaction[]> {
-    return Array.from(this.transactions.values())
-      .filter(t => t.userId === userId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const result = await this.db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.userId, userId))
+        .orderBy(desc(transactions.createdAt));
+    return result as Transaction[];
   }
 
   async getAllTransactions(): Promise<Transaction[]> {
-    return Array.from(this.transactions.values())
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const result = await this.db
+        .select()
+        .from(transactions)
+        .orderBy(desc(transactions.createdAt));
+    return result as Transaction[];
+  }
+
+  //------Buyables-------
+  async getBuyable(id: number): Promise<Buyable | undefined> {
+    const result = await this.db
+        .select()
+        .from(buyables)
+        .where(eq(buyables.id, id));
+    return result[0] as Buyable | undefined;
+  }
+
+  async getAllBuyables(): Promise<Buyable[]> {
+    const result = await this.db
+        .select()
+        .from(buyables);
+    return result as Buyable[];
+  }
+
+  async createBuyable(buyable: Omit<Buyable, "id" | "stock">): Promise<Buyable> {
+    const [newBuyable] = await this.db
+        .insert(buyables)
+        .values({
+          name: buyable.name,
+          price: buyable.price,
+          category: buyable.category,
+          stock: 0,
+        })
+        .returning();
+    return newBuyable as Buyable;
+  }
+
+
+  async updateBuyable(id: number, updates: Partial<Buyable>): Promise<Buyable> {
+    await this.db
+        .update(buyables)
+        .set(updates)
+        .where(eq(buyables.id, id));
+    const updatedBuyable = await this.getBuyable(id);
+    if (!updatedBuyable) throw new Error("Buyable not found");
+    return updatedBuyable;
+  }
+
+  async deleteBuyable(id: number): Promise<void> {
+    await this.db
+        .delete(buyables)
+        .where(eq(buyables.id, id));
   }
 }
 
-export const storage = new MemStorage();
+
+// Export an instance of your storage implementation.
+export const storage = new DrizzleStorage();

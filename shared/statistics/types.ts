@@ -17,8 +17,6 @@ export interface UserStatistics {
   purchaseCount: number;
   averagePurchaseTime: string | null;
   mostActiveDay: string | null;
-  largestPurchase: number;
-  largestDeposit: number;
 }
 
 export interface TimeStatistics {
