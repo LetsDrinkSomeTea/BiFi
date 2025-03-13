@@ -1,19 +1,20 @@
 services:
   db:
     image: postgres:15
+    restart: unless-stopped
     environment:
-      - POSTGRES_USER=yourusername
-      - POSTGRES_PASSWORD=yourpassword
-      - POSTGRES_DB=yourdbname
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=bifi
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      #- pgdata:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   app:
     build: .
+    restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://yourusername:yourpassword@db:5432/yourdbname
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/bifi
     depends_on:
       - db
     ports:
