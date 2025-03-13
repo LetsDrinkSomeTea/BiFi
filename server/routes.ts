@@ -134,6 +134,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/admin/users", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const { username, password, isAdmin } = req.body;
+      if(!username || !password) throw new Error(
+        "Nutzername und Passwort erforderlich"
+      )
+
+      // Check if the username is already taken
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        throw new Error(`Benutzername ${username} bereits vergeben`);
+      }
+      const user = await storage.createUser({
+        username,
+        password: await hashPassword(password),
+        isAdmin
+      });
+      res.json(user);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+
   app.delete("/api/admin/users/:id", async (req, res) => {
     try {
       requireAdmin(req);
