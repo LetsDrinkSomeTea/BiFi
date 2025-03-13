@@ -14,12 +14,11 @@ import { Badge } from "@/components/ui/badge";
 import {
   Beer,
   Users,
-  ArrowLeft,
   Trash2,
   Key,
   CreditCard,
   ShieldCheck,
-  BarChart,
+
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,7 +29,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";

@@ -11,7 +11,6 @@ export function checkForNewAchievements(params: AchievementCheckParams): Achieve
     if (unlockedAchievements.find(a => a.id === achievement.id)) {
       continue;
     }
-
     // Check if achievement should be unlocked
     if (achievement.check(params)) {
       newAchievements.push({

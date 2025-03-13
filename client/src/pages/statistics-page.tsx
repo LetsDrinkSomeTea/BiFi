@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Beer, Clock, Users } from "lucide-react";
+import { Beer, Clock } from "lucide-react";
 import {
   LineChart,
   Line,

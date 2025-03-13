@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Beer, History, Trophy } from "lucide-react";
+import {Beer, GlassWater, History, Trophy, Wine} from "lucide-react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { MainNav } from "@/components/main-nav";
@@ -18,8 +18,8 @@ export default function HomePage() {
   });
 
   const purchaseMutation = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/purchase");
+    mutationFn: async (args: {amount: Number, item: string}) => {
+      const res = await apiRequest("POST", "/api/purchase", args);
       return res.json();
     },
     onSuccess: () => {
@@ -53,12 +53,28 @@ export default function HomePage() {
                 €{user?.balance?.toFixed(2)}
               </p>
               <Button
-                className="w-full mt-4"
-                onClick={() => purchaseMutation.mutate()}
-                disabled={purchaseMutation.isPending}
+                  className="w-full mt-4"
+                  onClick={() => purchaseMutation.mutate({amount:1, item:"Bier"})}
+                  disabled={purchaseMutation.isPending}
               >
                 <Beer className="h-4 w-4 mr-2" />
-                Getränk kaufen (€1)
+                Bier kaufen (€1)
+              </Button>
+              <Button
+                  className="w-full mt-4"
+                  onClick={() => purchaseMutation.mutate({amount:1, item:"Softdrink"})}
+                  disabled={purchaseMutation.isPending}
+              >
+                <GlassWater className="h-4 w-4 mr-2" />
+                Spezi kaufen (€1)
+              </Button>
+              <Button
+                  className="w-full mt-4"
+                  onClick={() => purchaseMutation.mutate({amount:4, item:"Wein"})}
+                  disabled={purchaseMutation.isPending}
+              >
+                <Wine className="h-4 w-4 mr-2" />
+                Wein kaufen (€4)
               </Button>
             </CardContent>
           </Card>

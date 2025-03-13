@@ -16,13 +16,14 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   balance: real("balance").notNull().default(0),
   isAdmin: boolean("is_admin").notNull().default(false),
-  achievements: text("achievements").default("[]"),
+  achievements: text("achievements").notNull().default("[]"),
 });
 
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   amount: real("amount").notNull(),
+  item: text("item").default(""),
   type: text("type").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

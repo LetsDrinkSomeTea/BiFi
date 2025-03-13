@@ -1,5 +1,3 @@
-import { Transaction, User } from "../schema";
-
 export interface TimeRange {
   start: Date;
   end: Date;

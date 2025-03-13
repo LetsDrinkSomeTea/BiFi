@@ -1,4 +1,10 @@
 import { defineAchievement } from "./types";
+import { toZonedTime } from 'date-fns-tz';
+
+// Helper-Funktion zur Umrechnung in Berliner Zeit
+const toBerlinTime = (dateInput: string | Date): Date => {
+  return toZonedTime(new Date(dateInput), 'Europe/Berlin');
+};
 
 export const achievements = [
   // Getränke-Käufe
@@ -44,19 +50,19 @@ export const achievements = [
   defineAchievement({
     id: "pleite",
     name: "Pleite",
-    description: "Kontostand fiel unter –10 €.",
+    description: "Kontostand fiel unter –10€.",
     check: ({ user }) => user.balance < -10
   }),
   defineAchievement({
     id: "tief_verschuldet",
     name: "Tief verschuldet",
-    description: "Kontostand fiel unter –20 €.",
+    description: "Kontostand fiel unter –20€.",
     check: ({ user }) => user.balance < -20
   }),
   defineAchievement({
     id: "verantwortungsvoll",
     name: "Verantwortungsvoll",
-    description: "Positiver Kontostand erreicht.",
+    description: "Habe einen positiven Kontostand.",
     check: ({ user }) => user.balance > 0
   }),
   defineAchievement({
@@ -83,23 +89,23 @@ export const achievements = [
   defineAchievement({
     id: "grosse_einzahlung",
     name: "Große Einzahlung",
-    description: "Eine einzelne Einzahlung von 50 € oder mehr getätigt.",
+    description: "Eine einzelne Einzahlung von 50€ oder mehr getätigt.",
     check: ({ currentTransaction }) => {
-      return currentTransaction &&
-             currentTransaction!.type === "DEPOSIT" &&
-             currentTransaction!.amount >= 50;
+      if(!currentTransaction) return false;
+      return currentTransaction!.type === "DEPOSIT" &&
+          currentTransaction!.amount >= 50;
     }
   }),
   defineAchievement({
     id: "dreistellig",
     name: "Dreistellig",
-    description: "Kontostand von 100 € oder mehr erreicht.",
+    description: "Kontostand von 100€ oder mehr erreicht.",
     check: ({ user }) => user.balance >= 100
   }),
   defineAchievement({
     id: "finanz_phenix",
     name: "Finanz-Phönix",
-    description: "Von unter –20 € in den positiven Bereich mit einer Einzahlung gewechselt.",
+    description: "Von unter –20€ in den positiven Bereich mit einer Einzahlung gewechselt.",
     check: ({ user, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "DEPOSIT") return false;
       const previousBalance = user.balance - currentTransaction.amount;
@@ -124,8 +130,7 @@ export const achievements = [
     description: "Ein Getränk zwischen 6 und 10 Uhr morgens gekauft.",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
-      const date = new Date(currentTransaction.createdAt);
-      const berlinDate = new Date(date.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
+      const berlinDate = toBerlinTime(currentTransaction.createdAt);
       const hour = berlinDate.getHours();
       return hour >= 6 && hour < 10;
     }
@@ -136,8 +141,7 @@ export const achievements = [
     description: "Ein Getränk zwischen 23:59 und 00:01 gekauft.",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
-      const date = new Date(currentTransaction.createdAt);
-      const berlinDate = new Date(date.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
+      const berlinDate = toBerlinTime(currentTransaction.createdAt);
       const hour = berlinDate.getHours();
       const minute = berlinDate.getMinutes();
       return (hour === 23 && minute >= 59) || (hour === 0 && minute < 1);
@@ -149,8 +153,7 @@ export const achievements = [
     description: "Ein Getränk zwischen 16 und 18 Uhr gekauft.",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
-      const date = new Date(currentTransaction.createdAt);
-      const berlinDate = new Date(date.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
+      const berlinDate = toBerlinTime(currentTransaction.createdAt);
       const hour = berlinDate.getHours();
       return hour >= 16 && hour < 18;
     }
@@ -161,8 +164,7 @@ export const achievements = [
     description: "Ein Getränk zwischen 12 und 13 Uhr gekauft.",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
-      const date = new Date(currentTransaction.createdAt);
-      const berlinDate = new Date(date.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
+      const berlinDate = toBerlinTime(currentTransaction.createdAt);
       return berlinDate.getHours() === 12;
     }
   }),
@@ -172,8 +174,7 @@ export const achievements = [
     description: "Ein Getränk zwischen 4 und 6 Uhr morgens gekauft.",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
-      const date = new Date(currentTransaction.createdAt);
-      const berlinDate = new Date(date.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
+      const berlinDate = toBerlinTime(currentTransaction.createdAt);
       const hour = berlinDate.getHours();
       return hour >= 4 && hour < 6;
     }
@@ -186,14 +187,12 @@ export const achievements = [
     description: "5 Getränke an einem Tag gekauft.",
     check: ({ transactions, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
-      const currentDate = new Date(currentTransaction.createdAt);
-      const berlinCurrent = new Date(currentDate.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
+      const berlinCurrent = toBerlinTime(currentTransaction.createdAt);
       const targetDay = berlinCurrent.toISOString().split("T")[0];
       const count = transactions.filter(t =>
-        t.type === "PURCHASE" &&
-        t.createdAt &&
-        new Date(t.createdAt).toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" }) ===
-          new Date(berlinCurrent).toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" })
+          t.type === "PURCHASE" &&
+          t.createdAt &&
+          toBerlinTime(t.createdAt).toISOString().split("T")[0] === targetDay
       ).length;
       return count >= 5;
     }
@@ -204,18 +203,17 @@ export const achievements = [
     description: "Drei Käufe innerhalb einer Stunde (mindestens 5 Minuten Abstand).",
     check: ({ transactions, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
-      // Alle Käufe nach Erstellungszeitpunkt sortieren
       const purchases = transactions
-        .filter(t => t.type === "PURCHASE" && t.createdAt)
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          .filter(t => t.type === "PURCHASE" && t.createdAt)
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       for (let i = 0; i < purchases.length - 2; i++) {
         const first = new Date(purchases[i].createdAt);
         const second = new Date(purchases[i + 1].createdAt);
         const third = new Date(purchases[i + 2].createdAt);
         if (
-          (second.getTime() - first.getTime() >= 5 * 60 * 1000) &&
-          (third.getTime() - second.getTime() >= 5 * 60 * 1000) &&
-          (third.getTime() - first.getTime() <= 60 * 60 * 1000)
+            (second.getTime() - first.getTime() >= 5 * 60 * 1000) &&
+            (third.getTime() - second.getTime() >= 5 * 60 * 1000) &&
+            (third.getTime() - first.getTime() <= 60 * 60 * 1000)
         ) {
           return true;
         }
@@ -228,22 +226,18 @@ export const achievements = [
     name: "Weekend-Warrior",
     description: "Ein Getränk sowohl am Samstag als auch am Sonntag des gleichen Wochenendes gekauft.",
     check: ({ transactions }) => {
-      // Hole alle Kaufzeitpunkte in Berliner Zeit
-      const purchases = transactions
-        .filter(t => t.type === "PURCHASE" && t.createdAt)
-        .map(t => {
-          const d = new Date(t.createdAt);
-          return new Date(d.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
-        });
-      for (const d of purchases) {
+      const berlinPurchases = transactions
+          .filter(t => t.type === "PURCHASE" && t.createdAt)
+          .map(t => toBerlinTime(t.createdAt));
+      for (const d of berlinPurchases) {
         const day = d.getDay(); // 0 = Sonntag, 6 = Samstag
         if (day === 6) {
           const sunday = new Date(d);
           sunday.setDate(d.getDate() + 1);
-          if (purchases.some(p =>
-            p.getFullYear() === sunday.getFullYear() &&
-            p.getMonth() === sunday.getMonth() &&
-            p.getDate() === sunday.getDate()
+          if (berlinPurchases.some(p =>
+              p.getFullYear() === sunday.getFullYear() &&
+              p.getMonth() === sunday.getMonth() &&
+              p.getDate() === sunday.getDate()
           )) {
             return true;
           }
@@ -251,10 +245,10 @@ export const achievements = [
         if (day === 0) {
           const saturday = new Date(d);
           saturday.setDate(d.getDate() - 1);
-          if (purchases.some(p =>
-            p.getFullYear() === saturday.getFullYear() &&
-            p.getMonth() === saturday.getMonth() &&
-            p.getDate() === saturday.getDate()
+          if (berlinPurchases.some(p =>
+              p.getFullYear() === saturday.getFullYear() &&
+              p.getMonth() === saturday.getMonth() &&
+              p.getDate() === saturday.getDate()
           )) {
             return true;
           }
@@ -270,13 +264,12 @@ export const achievements = [
     check: ({ transactions }) => {
       const dayCounts: { [day: string]: number } = {};
       transactions
-        .filter(t => t.type === "PURCHASE" && t.createdAt)
-        .forEach(t => {
-          const d = new Date(t.createdAt);
-          const berlinDate = new Date(d.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
-          const day = berlinDate.toISOString().split("T")[0];
-          dayCounts[day] = (dayCounts[day] || 0) + 1;
-        });
+          .filter(t => t.type === "PURCHASE" && t.createdAt)
+          .forEach(t => {
+            const berlinDate = toBerlinTime(t.createdAt);
+            const day = berlinDate.toISOString().split("T")[0];
+            dayCounts[day] = (dayCounts[day] || 0) + 1;
+          });
       const daysWithFive = Object.values(dayCounts).filter(count => count >= 5).length;
       return daysWithFive >= 15;
     }
@@ -286,19 +279,17 @@ export const achievements = [
     name: "Monats Streak",
     description: "In 4 aufeinanderfolgenden Wochen mindestens ein Getränk gekauft.",
     check: ({ transactions }) => {
-      // Gruppiere Käufe nach ISO-Woche (in Berliner Zeit)
       const weeks = new Set<string>();
       transactions
-        .filter(t => t.type === "PURCHASE" && t.createdAt)
-        .forEach(t => {
-          const d = new Date(t.createdAt);
-          const berlinDate = new Date(d.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
-          const year = berlinDate.getFullYear();
-          const onejan = new Date(year, 0, 1);
-          const diff = (berlinDate.getTime() - onejan.getTime()) / 86400000;
-          const week = Math.ceil((diff + onejan.getDay() + 1) / 7);
-          weeks.add(`${year}-W${week}`);
-        });
+          .filter(t => t.type === "PURCHASE" && t.createdAt)
+          .forEach(t => {
+            const berlinDate = toBerlinTime(t.createdAt);
+            const year = berlinDate.getFullYear();
+            const onejan = new Date(year, 0, 1);
+            const diff = (berlinDate.getTime() - onejan.getTime()) / 86400000;
+            const week = Math.ceil((diff + onejan.getDay() + 1) / 7);
+            weeks.add(`${year}-W${week}`);
+          });
       const weekArr = Array.from(weeks).sort();
       let consecutive = 1;
       for (let i = 1; i < weekArr.length; i++) {
@@ -321,13 +312,12 @@ export const achievements = [
     check: ({ transactions }) => {
       const days = new Set<string>();
       transactions
-        .filter(t => t.type === "PURCHASE" && t.createdAt)
-        .forEach(t => {
-          const d = new Date(t.createdAt);
-          const berlinDate = new Date(d.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
-          const day = berlinDate.toISOString().split("T")[0];
-          days.add(day);
-        });
+          .filter(t => t.type === "PURCHASE" && t.createdAt)
+          .forEach(t => {
+            const berlinDate = toBerlinTime(t.createdAt);
+            const day = berlinDate.toISOString().split("T")[0];
+            days.add(day);
+          });
       const dayArr = Array.from(days).sort();
       for (let i = 0; i <= dayArr.length - 5; i++) {
         let streak = 1;
@@ -352,8 +342,8 @@ export const achievements = [
     description: "5 Käufe innerhalb von 5 Minuten getätigt.",
     check: ({ transactions }) => {
       const purchases = transactions
-        .filter(t => t.type === "PURCHASE" && t.createdAt)
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          .filter(t => t.type === "PURCHASE" && t.createdAt)
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       for (let i = 0; i < purchases.length; i++) {
         let count = 1;
         const start = new Date(purchases[i].createdAt).getTime();
@@ -377,8 +367,7 @@ export const achievements = [
     check: ({ transactions }) => {
       const mondayCount = transactions.filter(t => {
         if (t.type !== "PURCHASE" || !t.createdAt) return false;
-        const d = new Date(t.createdAt);
-        const berlinDate = new Date(d.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
+        const berlinDate = toBerlinTime(t.createdAt);
         return berlinDate.getDay() === 1; // Montag
       }).length;
       return mondayCount > 3;
@@ -391,18 +380,17 @@ export const achievements = [
     check: ({ transactions }) => {
       const seasons = new Set<string>();
       transactions
-        .filter(t => t.type === "PURCHASE" && t.createdAt)
-        .forEach(t => {
-          const d = new Date(t.createdAt);
-          const berlinDate = new Date(d.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
-          const month = berlinDate.getMonth() + 1;
-          let season = "";
-          if (month >= 3 && month <= 5) season = "Fruehling";
-          else if (month >= 6 && month <= 8) season = "Sommer";
-          else if (month >= 9 && month <= 11) season = "Herbst";
-          else season = "Winter";
-          seasons.add(season);
-        });
+          .filter(t => t.type === "PURCHASE" && t.createdAt)
+          .forEach(t => {
+            const berlinDate = toBerlinTime(t.createdAt);
+            const month = berlinDate.getMonth() + 1;
+            let season;
+            if (month >= 3 && month <= 5) season = "Fruehling";
+            else if (month >= 6 && month <= 8) season = "Sommer";
+            else if (month >= 9 && month <= 11) season = "Herbst";
+            else season = "Winter";
+            seasons.add(season);
+          });
       return seasons.size === 4;
     }
   }),
@@ -412,14 +400,13 @@ export const achievements = [
     description: "An einem wichtigen Feiertag (Weihnachten, Neujahr, Halloween) ein Getränk gekauft.",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
-      const d = new Date(currentTransaction.createdAt);
-      const berlinDate = new Date(d.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
+      const berlinDate = toBerlinTime(currentTransaction.createdAt);
       const month = berlinDate.getMonth() + 1;
       const day = berlinDate.getDate();
       // Feiertage: 25.12. (Weihnachten), 1.1. (Neujahr) und 31.10. (Halloween)
       return (month === 12 && day === 25) ||
-             (month === 1 && day === 1) ||
-             (month === 10 && day === 31);
+          (month === 1 && day === 1) ||
+          (month === 10 && day === 31);
     }
   }),
   defineAchievement({
@@ -427,20 +414,17 @@ export const achievements = [
     name: "Pünktlich-Pils",
     description: "5 Tage in Folge zu nahezu gleicher Tageszeit (±30 Minuten) eingekauft.",
     check: ({ transactions }) => {
-      // Für jeden Tag den Zeitpunkt des ersten Kaufs ermitteln (in Minuten seit Mitternacht)
       const dayTimes: { [day: string]: number } = {};
       transactions
-        .filter(t => t.type === "PURCHASE" && t.createdAt)
-        .forEach(t => {
-          const d = new Date(t.createdAt);
-          const berlinDate = new Date(d.toLocaleString("de-DE", { timeZone: "Europe/Berlin" }));
-          const day = berlinDate.toISOString().split("T")[0];
-          if (!(day in dayTimes)) {
-            dayTimes[day] = berlinDate.getHours() * 60 + berlinDate.getMinutes();
-          }
-        });
+          .filter(t => t.type === "PURCHASE" && t.createdAt)
+          .forEach(t => {
+            const berlinDate = toBerlinTime(t.createdAt);
+            const day = berlinDate.toISOString().split("T")[0];
+            if (!(day in dayTimes)) {
+              dayTimes[day] = berlinDate.getHours() * 60 + berlinDate.getMinutes();
+            }
+          });
       const days = Object.keys(dayTimes).sort();
-      // Prüfe auf 5 aufeinanderfolgende Tage, bei denen die Kaufzeit innerhalb eines 30-Minuten-Fensters liegt
       for (let i = 0; i <= days.length - 5; i++) {
         let streak = 1;
         const times = [dayTimes[days[i]]];
@@ -472,14 +456,13 @@ export const achievements = [
     description: "Eine Einzahlung als 7., 77. oder 777. Transaktion vorgenommen.",
     check: ({ transactions, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "DEPOSIT" || !currentTransaction.createdAt) return false;
-      // Sortiere alle Transaktionen chronologisch
       const sorted = transactions
-        .filter(t => t.createdAt)
-        .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          .filter(t => t.createdAt)
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
       const index = sorted.findIndex(t => t === currentTransaction);
       const position = index + 1; // 1-indexiert
       return currentTransaction.type === "DEPOSIT" &&
-             (position === 7 || position === 77 || position === 777);
+          (position === 7 || position === 77 || position === 777);
     }
   }),
 

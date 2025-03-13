@@ -1,4 +1,4 @@
-import { users, transactions, type User, type InsertUser, type Transaction } from "@shared/schema";
+import { type User, type InsertUser, type Transaction } from "@shared/schema";
 import { type Achievement } from "@shared/achievements";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -54,7 +54,8 @@ export class MemStorage implements IStorage {
       ...insertUser,
       id,
       balance: 0,
-      achievements: '[]'
+      achievements: '[]',
+      isAdmin: insertUser.isAdmin || false,
     };
     this.users.set(id, user);
     return user;

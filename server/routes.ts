@@ -1,9 +1,9 @@
-import type { Express, Request } from "express";
-import { createServer, type Server } from "http";
-import { setupAuth, hashPassword, comparePasswords } from "./auth";
-import { storage } from "./storage";
-import { checkForNewAchievements } from "@shared/achievements";
-import { calculateStatistics } from "@shared/statistics/utils";
+import type {Express, Request} from "express";
+import {createServer, type Server} from "http";
+import {comparePasswords, hashPassword, setupAuth} from "./auth";
+import {storage} from "./storage";
+import {checkForNewAchievements} from "@shared/achievements";
+import {calculateStatistics} from "@shared/statistics/utils";
 
 function requireAuth(req: Request) {
   if (!req.isAuthenticated()) {
@@ -25,16 +25,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       requireAuth(req);
       const userId = req.user!.id;
+      const { amount, item } = req.body;
 
       // Create transaction
       const transaction = await storage.createTransaction({
         userId,
-        amount: -1,
+        amount: -amount,
+        item: item,
         type: "PURCHASE"
       });
 
       // Update balance
-      const user = await storage.updateUserBalance(userId, -1);
+      const user = await storage.updateUserBalance(userId, -amount);
 
       // Check and update achievements
       const transactions = await storage.getTransactions(userId);
@@ -90,7 +92,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = await storage.createTransaction({
         userId,
         amount,
-        type: "DEPOSIT"
+        type: "DEPOSIT",
+        item: null
       });
 
       // Update user balance
@@ -227,6 +230,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  return createServer(app);
 }
