@@ -2,20 +2,48 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Key } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import React from "react";
+import {useMutation} from "@tanstack/react-query";
+import {apiRequest} from "@/lib/queryClient.ts";
 
 interface PasswordChangeDialogProps {
-    isOpen: boolean;
-    onOpenChange: (isOpen: boolean) => void;
-    currentPassword: string;
-    setCurrentPassword: (password: string) => void;
-    newPassword: string;
-    setNewPassword: (password: string) => void;
-    onChangePassword: () => void;
+    isDialogOpen: boolean;
+    setIsDialogOpen: (isOpen: boolean) => void;
 }
 
-function PasswordChangeDialog({ isOpen, onOpenChange, currentPassword, setCurrentPassword, newPassword, setNewPassword, onChangePassword }: PasswordChangeDialogProps) {
+function PasswordChangeDialog({ isDialogOpen, setIsDialogOpen}: PasswordChangeDialogProps) {
+    const { toast } = useToast();
+    const [currentPassword, setCurrentPassword] = React.useState("");
+    const [newPassword, setNewPassword] = React.useState("");
+    const [newPasswordRepeat, setNewPasswordRepeat] = React.useState("");
+
+
+    const changePasswordMutation = useMutation({
+        mutationFn: async () => {
+            await apiRequest("POST", "/api/change-password", {
+                currentPassword,
+                newPassword,
+            });
+        },
+        onSuccess: () => {
+            toast({ title: "Passwort erfolgreich geändert" });
+            setCurrentPassword("");
+            setNewPassword("");
+            setNewPasswordRepeat("");
+            setIsDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast({
+                title: "Passwort konnte nicht geändert werden",
+                description: error.message,
+                variant: "destructive",
+            });
+        },
+    });
+
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
                 <Button variant="ghost" className="w-full justify-start hover:text-muted-foreground">
                     <Key className="h-4 w-4 mr-2" />
@@ -37,9 +65,25 @@ function PasswordChangeDialog({ isOpen, onOpenChange, currentPassword, setCurren
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                     />
+                    <Input
+                        type="password"
+                        placeholder="Neues Passwort wiederholen"
+                        value={newPasswordRepeat}
+                        onChange={(e) => setNewPasswordRepeat(e.target.value)}
+                    />
                     <Button
                         className="w-full"
-                        onClick={onChangePassword}
+                        onClick={() => {
+                            if (newPassword !== newPasswordRepeat) {
+                                toast({
+                                    title: "Passwort konnte nicht geändert werden",
+                                    description: "Neues Passwort und die Wiederholung stimmen nicht überein",
+                                    variant: "destructive",
+                                });
+                                return;
+                            }
+                            changePasswordMutation.mutate()
+                        }}
                     >
                         Passwort ändern
                     </Button>

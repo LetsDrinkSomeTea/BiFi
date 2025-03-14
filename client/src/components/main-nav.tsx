@@ -4,9 +4,6 @@ import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import {Menu, Beer, LogOut, BarChart, Users, Warehouse, LucideProps} from "lucide-react";
 import React, { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import { useMutation } from "@tanstack/react-query";
 import { PasswordChangeDialog } from "@/components/password-change-dialog";
 
 interface MainNavProps {
@@ -22,32 +19,8 @@ export type MainNavItem = {
 
 export function MainNav({currentPath}: MainNavProps) {
   const { user, logoutMutation } = useAuth();
-  const { toast } = useToast();
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const changePasswordMutation = useMutation({
-    mutationFn: async () => {
-      await apiRequest("POST", "/api/change-password", {
-        currentPassword,
-        newPassword,
-      });
-    },
-    onSuccess: () => {
-      toast({ title: "Passwort erfolgreich geändert" });
-      setCurrentPassword("");
-      setNewPassword("");
-      setIsDialogOpen(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Passwort konnte nicht geändert werden",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
 
   const navigation: MainNavItem[] = [
     { name: "Dashboard", href: "/", icon: Beer, show: true },
@@ -87,13 +60,8 @@ export function MainNav({currentPath}: MainNavProps) {
                         )
                 )}
                 <PasswordChangeDialog
-                    isOpen={isDialogOpen}
-                    onOpenChange={setIsDialogOpen}
-                    currentPassword={currentPassword}
-                    setCurrentPassword={setCurrentPassword}
-                    newPassword={newPassword}
-                    setNewPassword={setNewPassword}
-                    onChangePassword={() => changePasswordMutation.mutate()}
+                    isDialogOpen={isDialogOpen}
+                    setIsDialogOpen={setIsDialogOpen}
                 />
                 <Button
                     variant="ghost"
