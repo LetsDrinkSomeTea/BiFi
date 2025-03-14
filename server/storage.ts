@@ -3,7 +3,7 @@ import db from './db';
 import {desc, eq, sql} from 'drizzle-orm';
 
 // Import your table definitions from your DB schema
-import {users, transactions, buyables, categoryIds} from '@shared/schema';
+import { users, transactions, buyables, categoryIds } from '@shared/schema';
 import { type User, type InsertUser, type Transaction, type Buyable } from '@shared/schema';
 import { type Achievement } from '@shared/achievements';
 

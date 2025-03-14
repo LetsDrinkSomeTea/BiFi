@@ -4,6 +4,7 @@ import {comparePasswords, hashPassword, setupAuth} from "./auth";
 import {storage} from "./storage";
 import {checkForNewAchievements} from "@shared/achievements";
 import {calculateStatistics} from "@shared/statistics/utils";
+import {Buyable} from "@shared/schema.ts";
 
 function requireAuth(req: Request) {
   if (!req.isAuthenticated()) {
@@ -26,6 +27,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       requireAuth(req);
       const userId = req.user!.id;
       const { buyableId } = req.body;
+
+      const buyables = await storage.getAllBuyables();
+      const buyablesMap = buyables.reduce<Record<number, Buyable>>((acc, buyable) => {
+        acc[buyable.id] = buyable;
+        return acc;
+      }, {});
 
       const buyable = await storage.getBuyable(buyableId);
       if (!buyable) {throw new Error("Buyable not found")}
@@ -52,6 +59,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           achievements: userAchievements
         },
         transactions,
+        buyablesMap: buyablesMap,
         currentTransaction: transaction
       });
 
@@ -107,12 +115,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transactions = await storage.getTransactions(userId);
       const userAchievements = JSON.parse(user.achievements);
 
+      const buyables = await storage.getAllBuyables();
+      const buyablesMap = buyables.reduce<Record<number, Buyable>>((acc, buyable) => {
+        acc[buyable.id] = buyable;
+        return acc;
+      }, {});
+
       const newAchievements = checkForNewAchievements({
         user: {
           balance: user.balance,
           achievements: userAchievements
         },
         transactions,
+        buyablesMap: buyablesMap,
         currentTransaction: transaction
       });
 

@@ -197,10 +197,10 @@ export default function InventoryPage() {
                                             onChange={(e) => setNewBuyableStock(e.target.value)}
                                         />
                                         <select
-                                            value={editBuyableCategory || ""}
+                                            value={newBuyableCategory || ""}
                                             defaultValue={categoryOptions[4].id}
                                             onChange={(e) =>
-                                                setEditBuyableCategory(e.target.value)
+                                                setNewBuyableCategory(e.target.value)
                                             }
                                             className="p-2 border rounded w-full"
                                         >

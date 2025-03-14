@@ -1,4 +1,4 @@
-import { Transaction } from "../schema";
+import {Buyable, Transaction} from "../schema";
 
 export interface Achievement {
   id: string;
@@ -20,6 +20,7 @@ export interface AchievementCheckParams {
     achievements: Achievement[];
   };
   transactions: Transaction[];
+  buyablesMap: Record<number, Buyable>
   currentTransaction?: Transaction;
 }
 

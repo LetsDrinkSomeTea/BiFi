@@ -11,7 +11,7 @@ export const achievements = [
   defineAchievement({
     id: "erster_kauf",
     name: "Erster Kauf",
-    description: "Dein allererster Getränkekauf.",
+    description: "Dein allererster Einkauf.",
     check: ({ transactions, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
       const purchaseCount = transactions.filter(t => t.type === "PURCHASE").length;
@@ -21,28 +21,10 @@ export const achievements = [
   defineAchievement({
     id: "dauergast",
     name: "Dauergast",
-    description: "10 oder mehr Getränke gekauft.",
+    description: "10 Mal eingekauft.",
     check: ({ transactions }) => {
       const purchaseCount = transactions.filter(t => t.type === "PURCHASE").length;
       return purchaseCount >= 10;
-    }
-  }),
-  defineAchievement({
-    id: "hopfenheld",
-    name: "Hopfenheld",
-    description: "100 oder mehr Getränke gekauft.",
-    check: ({ transactions }) => {
-      const purchaseCount = transactions.filter(t => t.type === "PURCHASE").length;
-      return purchaseCount >= 100;
-    }
-  }),
-  defineAchievement({
-    id: "legende_im_krug",
-    name: "Legende im Krug",
-    description: "1337 Getränke gekauft.",
-    check: ({ transactions }) => {
-      const purchaseCount = transactions.filter(t => t.type === "PURCHASE").length;
-      return purchaseCount >= 1337;
     }
   }),
 
@@ -89,7 +71,7 @@ export const achievements = [
   defineAchievement({
     id: "grosse_einzahlung",
     name: "Große Einzahlung",
-    description: "Eine einzelne Einzahlung von 50€ oder mehr getätigt.",
+    description: "Eine einzelne Einzahlung von 50€ getätigt.",
     check: ({ currentTransaction }) => {
       if(!currentTransaction) return false;
       return currentTransaction!.type === "DEPOSIT" &&
@@ -99,7 +81,7 @@ export const achievements = [
   defineAchievement({
     id: "dreistellig",
     name: "Dreistellig",
-    description: "Kontostand von 100€ oder mehr erreicht.",
+    description: "Kontostand von 100€ erreicht.",
     check: ({ user }) => user.balance >= 100
   }),
   defineAchievement({
@@ -485,4 +467,141 @@ export const achievements = [
     description: "30 verschiedene Erfolge freigeschaltet.",
     check: ({ user }) => user.achievements.length >= 30
   }),
+
+
+
+  // Kategorienvielfalt: In allen fünf Kategorien mindestens ein Kauf getätigt.
+  defineAchievement({
+    id: "kategorienvielfalt",
+    name: "Kategorienvielfalt",
+    description: "In allen fünf Kategorien mindestens ein Kauf getätigt.",
+    check: ({ transactions, buyablesMap}) => {
+      const purchaseCategories = new Set(
+          transactions
+              .filter(t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category)
+              .map(t => buyablesMap[t.item!]!.category)
+      );
+      return purchaseCategories.size >= 5;
+    }
+  }),
+
+  // Kategorie-basierte Achievements:
+  defineAchievement({
+    id: "hopfenheld",
+    name: "Hopfenheld",
+    description: "100 alkoholische Getränke gekauft.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "alcohol"
+      ).length;
+      return count >= 100;
+    }
+  }),
+  defineAchievement({
+    id: "legende_im_krug",
+    name: "Legende im Krug",
+    description: "1337 alkoholische Getränke gekauft.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "alcohol"
+      ).length;
+      return count >= 1337;
+    }
+  }),
+
+  // Softdrink Achievements:
+  defineAchievement({
+    id: "zuckerschock",
+    name: "Zuckerschock",
+    description: "100 Softdrinks gekauft.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "softdrink"
+      ).length;
+      return count >= 100;
+    }
+  }),
+  defineAchievement({
+    id: "limo_legende",
+    name: "Limo-Legende",
+    description: "1337 Softdrinks gekauft.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "softdrink"
+      ).length;
+      return count >= 1337;
+    }
+  }),
+    
+  defineAchievement({
+    id: "schlemmerchampion",
+    name: "Schlemmerchampion",
+    description: "100 Essenskäufe getätigt.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "food"
+      ).length;
+      return count >= 100;
+    }
+  }),
+  defineAchievement({
+    id: "teller_titan",
+    name: "Teller-Titan",
+    description: "1337 Essenskäufe getätigt.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "food"
+      ).length;
+      return count >= 1337;
+    }
+  }),
+    
+  defineAchievement({
+    id: "snack_koenig",
+    name: "Snack-König",
+    description: "100 Snack-Käufe getätigt.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "snack"
+      ).length;
+      return count >= 100;
+    }
+  }),
+  defineAchievement({
+    id: "knusper_kaiser",
+    name: "Knusper-Kaiser",
+    description: "1337 Snack-Käufe getätigt.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "snack"
+      ).length;
+      return count >= 1337;
+    }
+  }),
+
+  defineAchievement({
+    id: "sammler",
+    name: "Sammler",
+    description: "100 Käufe in Sonstiges getätigt.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "other"
+      ).length;
+      return count >= 100;
+    }
+  }),
+  defineAchievement({
+    id: "kuriositaeten_koenig",
+    name: "Kuriositäten-König",
+    description: "1337 Käufe in Sonstiges getätigt.",
+    check: ({ transactions, buyablesMap }) => {
+      const count = transactions.filter(
+          t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "other"
+      ).length;
+      return count >= 1337;
+    }
+  }),
+
+
+
 ];
