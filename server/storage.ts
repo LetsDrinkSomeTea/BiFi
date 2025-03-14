@@ -27,7 +27,7 @@ export interface IStorage {
   getAllBuyables(): Promise<Buyable[]>;
   createBuyable(buyable: Omit<Buyable, "id">): Promise<Buyable>;
   updateBuyable(id: number, updates: Partial<Buyable>): Promise<Buyable>;
-  deleteBuyable(id: number): Promise<void>;
+  deleteBuyable(id: number, restore:boolean): Promise<void>;
 }
 
 // Create a class implementing the IStorage interface using Drizzle
@@ -191,8 +191,8 @@ export class DrizzleStorage implements IStorage {
     return updatedBuyable;
   }
 
-  async deleteBuyable(id: number): Promise<void> {
-    await this.updateBuyable(id, { deleted: true });
+  async deleteBuyable(id: number, restore: boolean = false): Promise<void> {
+    await this.updateBuyable(id, { deleted: !restore });
   }
 
   async updateBuyableStock(id: number, amount: number): Promise<Buyable> {

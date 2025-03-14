@@ -344,5 +344,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/admin/buyables/:id/restore", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        throw new Error("Ungültige ID");
+      }
+      await storage.deleteBuyable(id, true);
+      res.sendStatus(200);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  })
+
   return createServer(app);
 }
