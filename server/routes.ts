@@ -2,7 +2,7 @@ import type {Express, Request} from "express";
 import {createServer, type Server} from "http";
 import {comparePasswords, hashPassword, setupAuth} from "./auth";
 import {storage} from "./storage";
-import {checkForNewAchievements} from "@shared/achievements";
+import {Achievement, achievements, checkForNewAchievements} from "@shared/achievements";
 import {calculateStatistics} from "@shared/statistics/utils";
 import {Buyable} from "@shared/schema.ts";
 
@@ -225,7 +225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       requireAuth(req);
       const end = new Date();
       const start = new Date(end);
-      start.setDate(end.getDate() - 7); // Default to 7 days
+      start.setDate(end.getDate()); // Default to 7 days
 
       if (req.query.days) {
         start.setDate(end.getDate() - parseInt(req.query.days as string));
@@ -254,23 +254,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const end = new Date();
       const start = new Date(end);
-      start.setDate(end.getDate() - 7); // Default to 7 days
 
-      if (req.query.days) {
-        start.setDate(end.getDate() - parseInt(req.query.days as string));
-      }
+      const days = req.query.days ? parseInt(req.query.days as string) : 7;
+      start.setDate(end.getDate() - days);
 
       const user = await storage.getUser(parseInt(req.params.userId));
       const transactions = await storage.getTransactions(parseInt(req.params.userId));
 
       const stats = calculateStatistics([user!], transactions, {
-        timeRange: { start, end },
+        timeRange: {start, end},
         userIds: [parseInt(req.params.userId)]
       });
 
       res.json(stats);
     } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
+      res.status(400).json({error: (err as Error).message});
     }
   });
 
@@ -304,11 +302,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/buyables", async (req, res) => {
     try {
       requireAdmin(req);
-      const { name, price, category } = req.body;
+      const { name, price, stock, category } = req.body;
       if (!name || price == null || !category) {
         throw new Error("Erforderliche Felder fehlen: name, price, category");
       }
-      const buyable = await storage.createBuyable({ name, price, category });
+      const buyable = await storage.createBuyable({ name, price, stock, category });
       res.json(buyable);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
@@ -367,6 +365,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("Ungültige ID");
       }
       await storage.deleteBuyable(id, true);
+      res.sendStatus(200);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  })
+  
+  app.get("/api/admin/achievements/unlock", async (req, res) => {
+    try {
+      requireAdmin(req);
+      requireAuth(req);
+      const user = req.user!;
+      const now = new Date().toISOString();
+
+      const allAchievements = achievements.map(a => ({
+        name: a.name,
+        id: a.id,
+        description: a.description,
+        unlockedAt: now
+      } as Achievement));
+
+      await storage.updateUserAchievements(user.id, allAchievements);
+
       res.sendStatus(200);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });

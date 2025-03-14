@@ -114,12 +114,11 @@ export default function HomePage() {
                       >
                         {otherBuyables.map((b) => (
                             <option key={b.id} value={b.id}>
-                              {b.name} (€
-                              {b.price.toFixed(2)})
+                              {b.name} ({b.price.toFixed(2)}€)
                             </option>
                         ))}
                       </select>
-                      <Button
+                      <Button className="w-1/2"
                           onClick={() => {
                             if (selectedOtherBuyableId) {
                               purchaseMutation.mutate({ buyableId: selectedOtherBuyableId });

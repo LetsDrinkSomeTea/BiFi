@@ -11,7 +11,7 @@ export const achievements = [
   defineAchievement({
     id: "erster_kauf",
     name: "Erster Kauf",
-    description: "Dein allererster Einkauf.",
+    description: "Dein allererster Einkauf",
     check: ({ transactions, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
       const purchaseCount = transactions.filter(t => t.type === "PURCHASE").length;
@@ -21,7 +21,7 @@ export const achievements = [
   defineAchievement({
     id: "dauergast",
     name: "Dauergast",
-    description: "10 Mal eingekauft.",
+    description: "10 Mal eingekauft",
     check: ({ transactions }) => {
       const purchaseCount = transactions.filter(t => t.type === "PURCHASE").length;
       return purchaseCount >= 10;
@@ -32,25 +32,25 @@ export const achievements = [
   defineAchievement({
     id: "pleite",
     name: "Pleite",
-    description: "Kontostand fiel unter –10€.",
+    description: "Kontostand fiel unter –10€",
     check: ({ user }) => user.balance < -10
   }),
   defineAchievement({
     id: "tief_verschuldet",
     name: "Tief verschuldet",
-    description: "Kontostand fiel unter –20€.",
+    description: "Kontostand fiel unter –20€",
     check: ({ user }) => user.balance < -20
   }),
   defineAchievement({
     id: "verantwortungsvoll",
     name: "Verantwortungsvoll",
-    description: "Habe einen positiven Kontostand.",
+    description: "Habe einen positiven Kontostand",
     check: ({ user }) => user.balance > 0
   }),
   defineAchievement({
     id: "passendes_kleingeld",
     name: "Passendes Kleingeld",
-    description: "Exakten Betrag eingezahlt, um den Kontostand auf Null zu bringen.",
+    description: "Exakten Betrag eingezahlt, um den Kontostand auf Null zu bringen",
     check: ({ user, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "DEPOSIT") return false;
       // Berechne den vorherigen Kontostand
@@ -61,7 +61,7 @@ export const achievements = [
   defineAchievement({
     id: "wendepunkt",
     name: "Wendepunkt",
-    description: "Von negativ zu positiv in einer Einzahlung gewechselt.",
+    description: "Von negativ zu positiv in einer Einzahlung gewechselt",
     check: ({ user, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "DEPOSIT") return false;
       const previousBalance = user.balance - currentTransaction.amount;
@@ -71,7 +71,7 @@ export const achievements = [
   defineAchievement({
     id: "grosse_einzahlung",
     name: "Große Einzahlung",
-    description: "Eine einzelne Einzahlung von 50€ getätigt.",
+    description: "Eine einzelne Einzahlung von 50€ getätigt",
     check: ({ currentTransaction }) => {
       if(!currentTransaction) return false;
       return currentTransaction!.type === "DEPOSIT" &&
@@ -81,13 +81,13 @@ export const achievements = [
   defineAchievement({
     id: "dreistellig",
     name: "Dreistellig",
-    description: "Kontostand von 100€ erreicht.",
+    description: "Kontostand von 100€ erreicht",
     check: ({ user }) => user.balance >= 100
   }),
   defineAchievement({
     id: "finanz_phenix",
     name: "Finanz-Phönix",
-    description: "Von unter –20€ in den positiven Bereich mit einer Einzahlung gewechselt.",
+    description: "Von unter –20€ in den positiven Bereich mit einer Einzahlung gewechselt",
     check: ({ user, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "DEPOSIT") return false;
       const previousBalance = user.balance - currentTransaction.amount;
@@ -97,7 +97,7 @@ export const achievements = [
   defineAchievement({
     id: "ich_hab_s_ja",
     name: "Ich habs ja",
-    description: "Bei einem positiven Kontostand nochmal etwas eingezahlt.",
+    description: "Bei einem positiven Kontostand nochmal etwas eingezahlt",
     check: ({ user, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "DEPOSIT") return false;
       const previousBalance = user.balance - currentTransaction.amount;
@@ -109,7 +109,7 @@ export const achievements = [
   defineAchievement({
     id: "frueher_vogel",
     name: "Früher Vogel",
-    description: "Ein Getränk zwischen 6 und 10 Uhr morgens gekauft.",
+    description: "Ein Getränk zwischen 6 und 10 Uhr morgens gekauft",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
       const berlinDate = toBerlinTime(currentTransaction.createdAt);
@@ -120,7 +120,7 @@ export const achievements = [
   defineAchievement({
     id: "geisterstunde",
     name: "Geisterstunde",
-    description: "Ein Getränk zwischen 23:59 und 00:01 gekauft.",
+    description: "Ein Einkauf um Mitternacht getätigt",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
       const berlinDate = toBerlinTime(currentTransaction.createdAt);
@@ -132,7 +132,7 @@ export const achievements = [
   defineAchievement({
     id: "happy_hour",
     name: "Happy Hour",
-    description: "Ein Getränk zwischen 16 und 18 Uhr gekauft.",
+    description: "Ein Getränk zwischen 16 und 18 Uhr gekauft",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
       const berlinDate = toBerlinTime(currentTransaction.createdAt);
@@ -143,7 +143,7 @@ export const achievements = [
   defineAchievement({
     id: "mittagspause",
     name: "Mittagspause",
-    description: "Ein Getränk zwischen 12 und 13 Uhr gekauft.",
+    description: "Ein Getränk zwischen 12 und 13 Uhr gekauft",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
       const berlinDate = toBerlinTime(currentTransaction.createdAt);
@@ -153,7 +153,7 @@ export const achievements = [
   defineAchievement({
     id: "morgenroete",
     name: "Morgenröte",
-    description: "Ein Getränk zwischen 4 und 6 Uhr morgens gekauft.",
+    description: "Ein Getränk zwischen 4 und 6 Uhr morgens gekauft",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
       const berlinDate = toBerlinTime(currentTransaction.createdAt);
@@ -164,25 +164,51 @@ export const achievements = [
 
   // Kaufmuster
   defineAchievement({
-    id: "durstmarathon",
-    name: "Durstmarathon",
-    description: "5 Getränke an einem Tag gekauft.",
+    id: "shopper",
+    name: "Shopper",
+    description: "5 Einkäufe an einem Tag gekauft",
     check: ({ transactions, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
+
+      // Bestimme den Ziel-Tag (in Berliner Zeit) basierend auf dem aktuellen Kauf
       const berlinCurrent = toBerlinTime(currentTransaction.createdAt);
       const targetDay = berlinCurrent.toISOString().split("T")[0];
-      const count = transactions.filter(t =>
+
+      // Filtere alle Käufe des Ziel-Tages
+      const dayPurchases = transactions.filter(t =>
           t.type === "PURCHASE" &&
           t.createdAt &&
           toBerlinTime(t.createdAt).toISOString().split("T")[0] === targetDay
-      ).length;
-      return count >= 5;
+      );
+
+      if (dayPurchases.length < 5) return false;
+
+      // Sortiere die Käufe chronologisch
+      const sortedPurchases = dayPurchases.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+
+      // Suche nach einer Sequenz von 5 Käufen, bei denen jeweils der Abstand zum Vorgänger >= 15 Minuten beträgt.
+      let streak = 1; // Der erste Kauf zählt als Start der Sequenz.
+      for (let i = 1; i < sortedPurchases.length; i++) {
+        const prevTime = new Date(sortedPurchases[i - 1].createdAt).getTime();
+        const currTime = new Date(sortedPurchases[i].createdAt).getTime();
+        if (currTime - prevTime >= 15 * 60 * 1000) {
+          streak++;
+          if (streak >= 5) return true;
+        } else {
+          // Bricht die Sequenz ab, starte neu mit dem aktuellen Kauf
+          streak = 1;
+        }
+      }
+      return false;
     }
   }),
+
   defineAchievement({
     id: "schnellfeuer",
     name: "Schnellfeuer",
-    description: "Drei Käufe innerhalb einer Stunde (mindestens 5 Minuten Abstand).",
+    description: "Drei Käufe innerhalb einer Stunde (mindestens 5 Minuten Abstand)",
     check: ({ transactions, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
       const purchases = transactions
@@ -203,10 +229,52 @@ export const achievements = [
       return false;
     }
   }),
+
   defineAchievement({
+    id: "intervall_trinker",
+    name: "Intervall-Trinker",
+    description: "Zwei exakt gleichlange Pausen zwischen aufeinanderfolgenden Einkäufen",
+    check: ({ transactions, currentTransaction }) => {
+      if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) {
+        return false;
+      }
+
+      // Filtere alle Käufe, egal an welchem Tag
+      const purchases = transactions.filter(t =>
+          t.type === "PURCHASE" && t.createdAt
+      );
+
+      // Es müssen mindestens drei Käufe vorhanden sein, um zwei Intervalle zu haben
+      if (purchases.length < 3) return false;
+
+      // Sortiere die Käufe chronologisch
+      const sortedPurchases = purchases.sort(
+          (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+
+      // Iteriere über die sortierten Käufe und prüfe benachbarte Tripel
+      for (let i = 0; i < sortedPurchases.length - 2; i++) {
+        const first = new Date(sortedPurchases[i].createdAt).getTime();
+        const second = new Date(sortedPurchases[i + 1].createdAt).getTime();
+        const third = new Date(sortedPurchases[i + 2].createdAt).getTime();
+
+        // Berechne die Pausen in Minuten (auf Minutenpräzision gerundet)
+        const gap1 = Math.round((second - first) / (60 * 1000));
+        const gap2 = Math.round((third - second) / (60 * 1000));
+
+        // Prüfe, ob beide Pausen mindestens 2 Minuten betragen und exakt gleich sind
+        if (gap1 >= 2 && gap2 >= 2 && gap1 === gap2) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }),
+
+defineAchievement({
     id: "weekend_warrior",
     name: "Weekend-Warrior",
-    description: "Ein Getränk sowohl am Samstag als auch am Sonntag des gleichen Wochenendes gekauft.",
+    description: "Ein Getränk sowohl am Samstag als auch am Sonntag des gleichen Wochenendes gekauft",
     check: ({ transactions }) => {
       const berlinPurchases = transactions
           .filter(t => t.type === "PURCHASE" && t.createdAt)
@@ -242,7 +310,7 @@ export const achievements = [
   defineAchievement({
     id: "hydrationsexperte",
     name: "Hydrationsexperte",
-    description: "An mindestens 15 verschiedenen Tagen 5 Getränke an einem Tag gekauft.",
+    description: "An mindestens 15 verschiedenen Tagen 5 Getränke an einem Tag gekauft",
     check: ({ transactions }) => {
       const dayCounts: { [day: string]: number } = {};
       transactions
@@ -259,7 +327,7 @@ export const achievements = [
   defineAchievement({
     id: "monats_streak",
     name: "Monats Streak",
-    description: "In 4 aufeinanderfolgenden Wochen mindestens ein Getränk gekauft.",
+    description: "In 4 aufeinanderfolgenden Wochen mindestens ein Getränk gekauft",
     check: ({ transactions }) => {
       const weeks = new Set<string>();
       transactions
@@ -290,7 +358,7 @@ export const achievements = [
   defineAchievement({
     id: "taegliches_ritual",
     name: "Tägliches Ritual",
-    description: "5 Tage in Folge jeden Tag mindestens ein Getränk gekauft.",
+    description: "5 Tage in Folge jeden Tag mindestens ein Getränk gekauft",
     check: ({ transactions }) => {
       const days = new Set<string>();
       transactions
@@ -321,7 +389,7 @@ export const achievements = [
   defineAchievement({
     id: "die_runde_geht_auf_mich",
     name: "Die Runde geht auf mich",
-    description: "5 Käufe innerhalb von 5 Minuten getätigt.",
+    description: "5 Käufe innerhalb von 5 Minuten getätigt",
     check: ({ transactions }) => {
       const purchases = transactions
           .filter(t => t.type === "PURCHASE" && t.createdAt)
@@ -345,7 +413,7 @@ export const achievements = [
   defineAchievement({
     id: "monday_blues",
     name: "Monday Blues",
-    description: "Mehr als 3 Getränke an einem Montag gekauft.",
+    description: "Mehr als 3 Getränke an einem Montag gekauft",
     check: ({ transactions }) => {
       const mondayCount = transactions.filter(t => {
         if (t.type !== "PURCHASE" || !t.createdAt) return false;
@@ -358,7 +426,7 @@ export const achievements = [
   defineAchievement({
     id: "saisontrinker",
     name: "Saisontrinker",
-    description: "In allen vier Jahreszeiten Getränke gekauft.",
+    description: "In allen vier Jahreszeiten Getränke gekauft",
     check: ({ transactions }) => {
       const seasons = new Set<string>();
       transactions
@@ -379,7 +447,7 @@ export const achievements = [
   defineAchievement({
     id: "feierlaune",
     name: "Feierlaune",
-    description: "An einem wichtigen Feiertag (Weihnachten, Neujahr, Halloween) ein Getränk gekauft.",
+    description: "An einem wichtigen Feiertag (Weihnachten, Neujahr, Halloween) ein Getränk gekauft",
     check: ({ currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE" || !currentTransaction.createdAt) return false;
       const berlinDate = toBerlinTime(currentTransaction.createdAt);
@@ -394,7 +462,7 @@ export const achievements = [
   defineAchievement({
     id: "puenktlich_pils",
     name: "Pünktlich-Pils",
-    description: "5 Tage in Folge zu nahezu gleicher Tageszeit (±30 Minuten) eingekauft.",
+    description: "5 Tage in Folge zu nahezu gleicher Tageszeit (±30 Minuten) eingekauft",
     check: ({ transactions }) => {
       const dayTimes: { [day: string]: number } = {};
       transactions
@@ -435,7 +503,7 @@ export const achievements = [
   defineAchievement({
     id: "lucky_seven",
     name: "Lucky Seven",
-    description: "Eine Einzahlung als 7., 77. oder 777. Transaktion vorgenommen.",
+    description: "Eine Einzahlung als 7., 77. oder 777. Transaktion vorgenommen",
     check: ({ transactions, currentTransaction }) => {
       if (!currentTransaction || currentTransaction.type !== "DEPOSIT" || !currentTransaction.createdAt) return false;
       const sorted = transactions
@@ -452,19 +520,19 @@ export const achievements = [
   defineAchievement({
     id: "erfolgsjaeger",
     name: "Erfolgsjäger",
-    description: "10 verschiedene Erfolge freigeschaltet.",
+    description: "10 verschiedene Erfolge freigeschaltet",
     check: ({ user }) => user.achievements.length >= 10
   }),
   defineAchievement({
     id: "meistersammler",
     name: "Meistersammler",
-    description: "20 verschiedene Erfolge freigeschaltet.",
+    description: "20 verschiedene Erfolge freigeschaltet",
     check: ({ user }) => user.achievements.length >= 20
   }),
   defineAchievement({
     id: "trophaeen_titan",
     name: "Trophäen-Titan",
-    description: "30 verschiedene Erfolge freigeschaltet.",
+    description: "30 verschiedene Erfolge freigeschaltet",
     check: ({ user }) => user.achievements.length >= 30
   }),
 
@@ -474,7 +542,7 @@ export const achievements = [
   defineAchievement({
     id: "kategorienvielfalt",
     name: "Kategorienvielfalt",
-    description: "In allen fünf Kategorien mindestens ein Kauf getätigt.",
+    description: "In allen fünf Kategorien mindestens ein Kauf getätigt",
     check: ({ transactions, buyablesMap}) => {
       const purchaseCategories = new Set(
           transactions
@@ -489,7 +557,7 @@ export const achievements = [
   defineAchievement({
     id: "hopfenheld",
     name: "Hopfenheld",
-    description: "100 alkoholische Getränke gekauft.",
+    description: "100 alkoholische Getränke gekauft",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "alcohol"
@@ -500,7 +568,7 @@ export const achievements = [
   defineAchievement({
     id: "legende_im_krug",
     name: "Legende im Krug",
-    description: "1337 alkoholische Getränke gekauft.",
+    description: "1337 alkoholische Getränke gekauft",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "alcohol"
@@ -513,7 +581,7 @@ export const achievements = [
   defineAchievement({
     id: "zuckerschock",
     name: "Zuckerschock",
-    description: "100 Softdrinks gekauft.",
+    description: "100 Softdrinks gekauft",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "softdrink"
@@ -524,7 +592,7 @@ export const achievements = [
   defineAchievement({
     id: "limo_legende",
     name: "Limo-Legende",
-    description: "1337 Softdrinks gekauft.",
+    description: "1337 Softdrinks gekauft",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "softdrink"
@@ -536,7 +604,7 @@ export const achievements = [
   defineAchievement({
     id: "schlemmerchampion",
     name: "Schlemmerchampion",
-    description: "100 Essenskäufe getätigt.",
+    description: "100 Essenskäufe getätigt",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "food"
@@ -547,7 +615,7 @@ export const achievements = [
   defineAchievement({
     id: "teller_titan",
     name: "Teller-Titan",
-    description: "1337 Essenskäufe getätigt.",
+    description: "1337 Essenskäufe getätigt",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "food"
@@ -559,7 +627,7 @@ export const achievements = [
   defineAchievement({
     id: "snack_koenig",
     name: "Snack-König",
-    description: "100 Snack-Käufe getätigt.",
+    description: "100 Snack-Käufe getätigt",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "snack"
@@ -570,7 +638,7 @@ export const achievements = [
   defineAchievement({
     id: "knusper_kaiser",
     name: "Knusper-Kaiser",
-    description: "1337 Snack-Käufe getätigt.",
+    description: "1337 Snack-Käufe getätigt",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "snack"
@@ -582,7 +650,7 @@ export const achievements = [
   defineAchievement({
     id: "sammler",
     name: "Sammler",
-    description: "100 Käufe in Sonstiges getätigt.",
+    description: "100 Käufe in Sonstiges getätigt",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "other"
@@ -593,7 +661,7 @@ export const achievements = [
   defineAchievement({
     id: "kuriositaeten_koenig",
     name: "Kuriositäten-König",
-    description: "1337 Käufe in Sonstiges getätigt.",
+    description: "1337 Käufe in Sonstiges getätigt",
     check: ({ transactions, buyablesMap }) => {
       const count = transactions.filter(
           t => t.type === "PURCHASE" && buyablesMap[t.item!]!.category === "other"

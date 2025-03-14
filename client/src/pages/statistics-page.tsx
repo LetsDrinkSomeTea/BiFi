@@ -9,8 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import {Beer, Clock, Users} from "lucide-react";
+import {Beer, Clock, Euro, MonitorCog, Users} from "lucide-react";
 import {
   LineChart,
   Line,
@@ -30,15 +29,15 @@ import {Buyable} from "@shared/schema.ts";
 
 export default function StatisticsPage() {
   const { user } = useAuth();
-  const [timeRange, setTimeRange] = useState("7d");
+  const [days, setDays] = useState("7");
 
-  const { data: personalStats, isLoading: isLoadingPersonal } = useQuery<Statistics>({
-    queryKey: [`/api/stats/user/${user?.id}`, timeRange],
+  const {data: personalStats, isLoading: isLoadingPersonal} = useQuery<Statistics>({
+    queryKey: [`/api/stats/user/${user?.id}?days=${days}`],
     enabled: !!user?.id,
   });
 
   const { data: systemStats, isLoading: isLoadingSystem } = useQuery<Statistics>({
-    queryKey: ["/api/stats/system", timeRange],
+    queryKey: ["/api/stats/system", days],
   });
 
   const { data: buyables } = useQuery<Buyable[]>({
@@ -78,31 +77,30 @@ export default function StatisticsPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Filter</CardTitle>
-          </CardHeader>
-          <CardContent className="flex gap-4">
-            <div className="space-y-2">
-              <Label>Zeitraum</Label>
-              <Select value={timeRange} onValueChange={setTimeRange}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="24h">Letzte 24 Stunden</SelectItem>
-                  <SelectItem value="7d">Letzte 7 Tage</SelectItem>
-                  <SelectItem value="30d">Letzte 30 Tage</SelectItem>
-                  <SelectItem value="90d">Letzte 90 Tage</SelectItem>
-                  <SelectItem value="1y">Letztes Jahr</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Personal Overview Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Statistiken</CardTitle>
+            </CardHeader>
+            <CardContent className="flex gap-4">
+              <div className="flex flex-grow">
+                <Select value={days} onValueChange={setDays}>
+                  <SelectTrigger>
+                    <SelectValue/>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7">der letzten 7 Tage</SelectItem>
+                    <SelectItem value="30">der letzten 30 Tage</SelectItem>
+                    <SelectItem value="90">der letzten 90 Tage</SelectItem>
+                    <SelectItem value="365">des letzten Jahres</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -121,22 +119,11 @@ export default function StatisticsPage() {
               <CardTitle className="text-sm font-medium">
                 Meine Ausgaben
               </CardTitle>
-              <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
+              <Euro className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                €{personalStats.totals.totalAmount.toFixed(2)}
+                {personalStats.totals.totalAmount.toFixed(2)}€
               </div>
               <p className="text-xs text-muted-foreground">
                 Ø {personalStats.totals.averagePurchaseAmount.toFixed(2)}€ pro Einkauf
@@ -182,7 +169,7 @@ export default function StatisticsPage() {
                         format(new Date(date), "d. MMM yyyy", { locale: de })
                       }
                       formatter={(value: number) => [
-                        `€${value.toFixed(2)}`,
+                        `${value.toFixed(2)}€`,
                         "Betrag",
                       ]}
                     />
@@ -211,7 +198,7 @@ export default function StatisticsPage() {
                     <YAxis />
                     <Tooltip
                       formatter={(value: number) => [
-                        `€${value.toFixed(2)}`,
+                        `${value.toFixed(2)}€`,
                         "Betrag",
                       ]}
                     />
@@ -241,7 +228,7 @@ export default function StatisticsPage() {
                         `${hour}:00 - ${(hour + 1) % 24}:00`
                       }
                       formatter={(value: number) => [
-                        `€${value.toFixed(2)}`,
+                        `${value.toFixed(2)}€`,
                         "Betrag",
                       ]}
                     />
@@ -254,11 +241,12 @@ export default function StatisticsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Beliebte Einkäufe</CardTitle>
+              <CardTitle>Beliebte Kategorien</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
+              <div className="h-[300px] content-center">
+                {countByItemWithBuyableName.length > 0 ?
+                  (<ResponsiveContainer width="100%" height="100%">
                   <BarChart data={countByItemWithBuyableName}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
@@ -271,7 +259,13 @@ export default function StatisticsPage() {
                     />
                     <Bar dataKey="count" fill="hsl(var(--primary))" />
                   </BarChart>
-                </ResponsiveContainer>
+                </ResponsiveContainer>)
+                  : (
+                      <div className="text-center text-lg text-muted-foreground">
+                        Noch keine Einkäufe vorhanden
+                      </div>
+                    )
+                }
               </div>
             </CardContent>
           </Card>
@@ -279,61 +273,61 @@ export default function StatisticsPage() {
 
         </div>
         {/* System Overview Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Gesamtkäufe
-              </CardTitle>
-              <Beer className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {systemStats.totals.totalPurchases}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Gesamtumsatz
-              </CardTitle>
-              <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {systemStats.totals.totalAmount.toFixed(2)}€
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Ø €{systemStats.totals.averagePurchaseAmount.toFixed(2)} pro Einkauf
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Aktive Nutzer
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {systemStats.totals.uniqueUsers}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle>
+              Systemweite Statistiken
+            </CardTitle>
+            <MonitorCog className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-8 md:grid-cols-3">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Gesamtkäufe
+                  </CardTitle>
+                  <Beer className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {systemStats.totals.totalPurchases}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Gesamtumsatz
+                  </CardTitle>
+                  <Euro className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {systemStats.totals.totalAmount.toFixed(2)}€
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Ø €{systemStats.totals.averagePurchaseAmount.toFixed(2)} pro Einkauf
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Aktive Nutzer
+                  </CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {systemStats.totals.uniqueUsers}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+
       </main>
     </div>
   );

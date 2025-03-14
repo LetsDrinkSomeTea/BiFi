@@ -34,7 +34,7 @@ function AchievementBadge({ achievement, activeTooltipId, setActiveTooltipId }: 
                 </TooltipTrigger>
                 <TooltipContent
                 >
-                    {achievement.description} - Freigeschaltet: {new Date(achievement.unlockedAt).toLocaleString("de-DE")}
+                    {achievement.description} - <strong>{new Date(achievement.unlockedAt).toLocaleString("de-DE")}</strong>
                 </TooltipContent>
             </Tooltip>
         </TooltipProvider>

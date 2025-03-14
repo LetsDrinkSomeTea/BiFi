@@ -300,7 +300,7 @@ export default function InventoryPage() {
                         </Table>
                     </CardContent>
                 </Card>
-                {buyables!.filter((b) => {
+                {buyables && buyables!.filter((b) => {
                     return b.deleted
                 }).length > 0 ? (<Card>
                     <CardHeader className="flex flex-row items-center justify-between">
@@ -474,7 +474,7 @@ export default function InventoryPage() {
                             </DialogHeader>
                             <div className="space-y-4 pt-4">
                                 <div className="flex-col gap-2">
-                                    <div className="flex text-muted-foreground text-sm">Aufstocken um</div>
+                                    <div className="flex text-muted-foreground text-sm pb-2">Aufstocken um</div>
                                     <Input
                                         type="number"
                                         placeholder="Stückzahl"

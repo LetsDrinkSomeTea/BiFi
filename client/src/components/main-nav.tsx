@@ -53,7 +53,7 @@ export function MainNav({currentPath}: MainNavProps) {
     { name: "Dashboard", href: "/", icon: Beer, show: true },
     { name: "Statistiken", href: "/stats", icon: BarChart, show: true },
     { name: "Inventar", href: "/inventory", icon: Warehouse, show: user?.isAdmin },
-    { name: "Admin", href: "/admin", icon: Users, show: user?.isAdmin }
+    { name: "Benutzer", href: "/admin", icon: Users, show: user?.isAdmin }
   ];
 
   return (
@@ -79,7 +79,7 @@ export function MainNav({currentPath}: MainNavProps) {
                 {navigation.filter(item => item.href != currentPath).map(item =>
                         item.show && (
                             <Link key={item.href} href={item.href}>
-                              <Button variant="ghost" className="w-full justify-start">
+                              <Button variant="ghost" className="w-full justify-start hover:text-muted-foreground">
                                 <item.icon className="h-4 w-4 mr-2"/>
                                 {item.name}
                               </Button>

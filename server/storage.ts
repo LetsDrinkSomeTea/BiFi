@@ -168,7 +168,7 @@ export class DrizzleStorage implements IStorage {
     return result as Buyable[];
   }
 
-  async createBuyable(buyable: Omit<Buyable, "id" | "stock" | "deleted">): Promise<Buyable> {
+  async createBuyable(buyable: Omit<Buyable, "id" | "deleted">): Promise<Buyable> {
     if (buyable.category && !categoryIds.includes(buyable.category)) return Promise.reject(new Error("Invalid category"));
     const [newBuyable] = await this.db
         .insert(buyables)
@@ -176,7 +176,7 @@ export class DrizzleStorage implements IStorage {
           name: buyable.name,
           price: buyable.price,
           category: buyable.category,
-          stock: 0,
+          stock: buyable.stock || 0,
           deleted: false,
         })
         .returning();

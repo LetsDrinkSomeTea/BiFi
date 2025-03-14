@@ -17,7 +17,7 @@ function PasswordChangeDialog({ isOpen, onOpenChange, currentPassword, setCurren
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
-                <Button variant="ghost">
+                <Button variant="ghost" className="w-full justify-start hover:text-muted-foreground">
                     <Key className="h-4 w-4 mr-2" />
                     Passwort ändern
                 </Button>
