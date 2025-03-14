@@ -34,7 +34,7 @@ export default function InventoryPage() {
     // Nur Admins haben Zugriff
     if (!user?.isAdmin) {
         setLocation("/");
-        return null;
+        return <div>Keine Berechtigung</div>;
     }
 
     // Hole alle Buyables

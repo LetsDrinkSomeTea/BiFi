@@ -39,9 +39,15 @@ export default function AdminPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
+  if (!user?.isAdmin) {
+    setLocation("/");
+    return <div>Keine Berechtigung</div>;
+  }
+
   const { data: users } = useQuery<User[]>({
     queryKey: ["/api/users"],
   });
+
 
   // State for dialog forms
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -159,11 +165,6 @@ export default function AdminPage() {
       toast({ title: `Benutzerrolle aktualisiert` });
     },
   });
-
-  if (!user?.isAdmin) {
-    setLocation("/");
-    return null;
-  }
 
   return (
       <div className="min-h-screen bg-background">
