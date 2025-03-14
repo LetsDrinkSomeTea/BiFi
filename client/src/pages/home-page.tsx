@@ -23,18 +23,11 @@ export default function HomePage() {
     queryKey: ["/api/buyables"],
   });
 
-  // Umwandlung des Buyables-Arrays in ein Map-Objekt, damit wir z. B. buyableMap[1].name verwenden können
-  const buyableMap = React.useMemo(() => {
-    const map: Record<number, Buyable> = {};
-    if (buyables) {
-      buyables.forEach((b) => {
-        map[b.id] = b;
-      });
-    }
-    return map;
-  }, [buyables]);
+  const { data: buyablesMap } = useQuery<Buyable[]>({
+    queryKey: ["/api/buyables/map"],
+  });
 
-
+  if (!buyablesMap) {throw new Error("Keine Buyables gefunden");}
   // Filter für Buyables mit id 4 ... n
   const otherBuyables = React.useMemo(() => {
     return buyables ? buyables.filter((b) => b.id >= 4 && !b.deleted).sort((a,b) => a.name.localeCompare(b.name)) : [];
@@ -87,17 +80,17 @@ export default function HomePage() {
                 </p>
                 {/* Fixe Buttons für die Buyable IDs 1, 2 und 3 */}
                 <BuyButton
-                    buyable={buyableMap[1]}
+                    buyable={buyablesMap[1]}
                     onBuy={purchaseMutation.mutate}
                     icon={Beer}
                 />
                 <BuyButton
-                    buyable={buyableMap[2]}
+                    buyable={buyablesMap[2]}
                     onBuy={purchaseMutation.mutate}
                     icon={GlassWater}
                 />
                 <BuyButton
-                    buyable={buyableMap[3]}
+                    buyable={buyablesMap[3]}
                     onBuy={purchaseMutation.mutate}
                     icon={Wine}
                 />
@@ -162,7 +155,7 @@ export default function HomePage() {
                   {transactions?.slice(0, 5).map((transaction) => {
                     // Wir gehen davon aus, dass transaction.item die buyableId enthält
                     const buyableName =
-                        buyableMap[transaction.item as number]?.name || transaction.item;
+                        buyablesMap[transaction.item as number]?.name || transaction.item;
                     return (
                         <div key={transaction.id} className="flex justify-between">
                           <div className="text-sm text-muted-foreground w-32">

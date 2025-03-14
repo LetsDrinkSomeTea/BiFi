@@ -4,7 +4,8 @@ import {comparePasswords, hashPassword, setupAuth} from "./auth";
 import {storage} from "./storage";
 import {Achievement, achievements, checkForNewAchievements} from "@shared/achievements";
 import {calculateStatistics} from "@shared/statistics/utils";
-import {Buyable} from "@shared/schema.ts";
+import {Buyable, BuyablesMap} from "@shared/schema.ts";
+import React from "react";
 
 function requireAuth(req: Request) {
   if (!req.isAuthenticated()) {
@@ -263,7 +264,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const stats = calculateStatistics([user!], transactions, {
         timeRange: {start, end},
-        userIds: [parseInt(req.params.userId)]
       });
 
       res.json(stats);
@@ -277,6 +277,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const buyables = await storage.getAllBuyables();
       res.json(buyables);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/buyables/map", async (req, res) => {
+    try {
+      const buyables = await storage.getAllBuyables();
+      const buyablesMap: BuyablesMap = buyables.reduce((map, buyable) => {
+        map[buyable.id] = buyable;
+        return map;
+      }, {} as Record<string, Buyable>);
+      res.json(buyablesMap);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
     }

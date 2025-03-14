@@ -37,6 +37,8 @@ export const buyables = pgTable("buyables", {
   deleted: boolean("deleted").notNull().default(false),
 })
 
+export type BuyablesMap = Record<string, Buyable>;
+
 export interface BuyableCategory {
   id: string;
   displayName: string;

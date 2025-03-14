@@ -40,22 +40,11 @@ export default function StatisticsPage() {
     queryKey: ["/api/stats/system", days],
   });
 
-  const { data: buyables } = useQuery<Buyable[]>({
-    queryKey: ["/api/buyables"],
+  const { data: buyablesMap } = useQuery<Buyable[]>({
+    queryKey: ["/api/buyables/map"],
   });
 
-  // Umwandlung des Buyables-Arrays in ein Map-Objekt, damit wir z. B. buyableMap[1].name verwenden können
-  const buyableMap = React.useMemo(() => {
-    const map: Record<number, Buyable> = {};
-    if (buyables) {
-      buyables.forEach((b) => {
-        map[b.id] = b;
-      });
-    }
-    return map;
-  }, [buyables]);
-
-  if (isLoadingPersonal || isLoadingSystem || !personalStats || !systemStats) {
+  if (isLoadingPersonal || isLoadingSystem || !personalStats || !systemStats || !buyablesMap) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-pulse">Statistiken werden geladen...</div>
@@ -66,7 +55,7 @@ export default function StatisticsPage() {
     const countByItemWithBuyableName = personalStats.users[0].purchaseCountByItem.slice(0, 5)
         .map((item): CountByItem => ({
             itemId: item.itemId,
-            name: buyableMap[item.itemId].name,
+            name: buyablesMap[item.itemId].name,
             count: item.count
         }));
 

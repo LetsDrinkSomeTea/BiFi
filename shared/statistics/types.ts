@@ -5,16 +5,13 @@ export interface TimeRange {
 
 export interface StatisticsFilters {
   timeRange: TimeRange;
-  userIds?: number[];
 }
 
 export interface UserStatistics {
-  userId: number;
-  username: string;
   totalSpent: number;
   totalDeposited: number;
   balance: number;
-  purchaseCount: number;
+  purchaseCountTotal: number;
   purchaseCountByItem: CountByItem[];
   averagePurchaseTime: string | null;
   mostActiveDay: string | null;
