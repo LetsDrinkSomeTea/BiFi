@@ -32,6 +32,6 @@ VALUES ('admin', 'bc26ab1c7734c445ae10a6531519b2fdae561e65d729104ecbef719ee8aa3c
 
 
 INSERT INTO "buyables" ("name", "price", "category", "stock", "deleted")
-VALUES ('Bier', 1.0, 'Alkohol', 0, false),
-       ('Softdrink', 1.00, 'Anti-Alkohol', 0, false),
-       ('Wein', 4.00, 'Alkohol', 0, false);
+VALUES ('Bier', 1.0, 'Alkohol', 20, false),
+       ('Softdrink', 1.00, 'Anti-Alkohol', 20, false),
+       ('Wein', 4.00, 'Alkohol', 12, false);
