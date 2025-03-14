@@ -153,7 +153,7 @@ export default function InventoryPage() {
             setIsRestockDialogOpen(false);
             setSelectedBuyable(null);
         }
-    })
+    });
 
     return (
         <div className="min-h-screen bg-background">
@@ -230,123 +230,215 @@ export default function InventoryPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Preis</TableHead>
-                                    <TableHead>Lagerbestand</TableHead>
-                                    <TableHead>Kategorie</TableHead>
-                                    <TableHead className="text-right">Aktionen</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {buyables
-                                    ?.filter((b) => {
-                                        return !b.deleted
-                                    }).sort((a, b) => a.name.localeCompare(b.name))
-                                    .map((b) => (
-                                        <TableRow key={b.id}>
-                                            <TableCell className="font-medium">{b.name}</TableCell>
-                                            <TableCell>{b.price.toFixed(2)}€</TableCell>
-                                            <TableCell
-                                                className={b.stock < 10 ? "text-destructive" : "text-primary"}>{b.stock}</TableCell>
-                                            <TableCell>{categoryMap[b.category]}</TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    {/* Löschen Button*/}
-                                                    {b.id > 3 ? ( // Bier, Wein und Softdrinks können nicht gelöscht werden
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Name</TableHead>
+                                        <TableHead>Preis</TableHead>
+                                        <TableHead>Lagerbestand</TableHead>
+                                        <TableHead>Kategorie</TableHead>
+                                        <TableHead className="text-right">Aktionen</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {buyables
+                                        ?.filter((b) => !b.deleted)
+                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                        .map((b) => (
+                                            <TableRow key={b.id}>
+                                                <TableCell className="font-medium">{b.name}</TableCell>
+                                                <TableCell>{b.price.toFixed(2)}€</TableCell>
+                                                <TableCell className={b.stock < 10 ? "text-destructive" : "text-primary"}>
+                                                    {b.stock}
+                                                </TableCell>
+                                                <TableCell>{categoryMap[b.category]}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        {b.id > 3 && (
+                                                            <Button
+                                                                variant="outline"
+                                                                size="icon"
+                                                                onClick={() => {
+                                                                    setSelectedBuyableForDeletion(b);
+                                                                    setIsDeleteDialogOpen(true);
+                                                                }}
+                                                            >
+                                                                <Trash2 className="h-4 w-4 text-destructive"/>
+                                                            </Button>
+                                                        )}
                                                         <Button
                                                             variant="outline"
                                                             size="icon"
                                                             onClick={() => {
-                                                                setSelectedBuyableForDeletion(b);
-                                                                setIsDeleteDialogOpen(true);
+                                                                setSelectedBuyable(b);
+                                                                setIsRestockDialogOpen(true);
                                                             }}
                                                         >
-                                                            <Trash2 className="h-4 w-4 text-destructive"/>
-                                                        </Button>) : ''
-                                                    }
-                                                    {/* Aufstocken */}
-                                                    <Button
-                                                        variant="outline"
-                                                        size="icon"
-                                                        onClick={() => {
-                                                            setSelectedBuyable(b);
-                                                            setIsRestockDialogOpen(true)
-                                                        }}
-                                                    >
-                                                        <Plus className="h-4 w-4"/>
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="icon"
-                                                        onClick={() => {
-                                                            setSelectedBuyable(b);
-                                                            setEditBuyablePrice(b.price.toString());
-                                                            setEditBuyableStock(b.stock.toString());
-                                                            setEditBuyableCategory(b.category);
-                                                            setIsEditDialogOpen(true);
-                                                        }}
-                                                    >
-                                                        <Edit className="h-4 w-4"/>
-                                                    </Button>
-                                                    {/* Löschen */}
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-                {buyables && buyables!.filter((b) => {
-                    return b.deleted
-                }).length > 0 ? (<Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Gelöschte Gegenstände</CardTitle>
-                        <div className="flex flex-row gap-4 items-center">
-                            <Trash2 className="h-5 w-5 text-muted-foreground"/>
+                                                            <Plus className="h-4 w-4"/>
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() => {
+                                                                setSelectedBuyable(b);
+                                                                setEditBuyablePrice(b.price.toString());
+                                                                setEditBuyableStock(b.stock.toString());
+                                                                setEditBuyableCategory(b.category);
+                                                                setIsEditDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            <Edit className="h-4 w-4"/>
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                </TableBody>
+                            </Table>
                         </div>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Preis</TableHead>
-                                    <TableHead>Kategorie</TableHead>
-                                    <TableHead className="text-right">Aktionen</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {buyables
-                                    ?.filter((b) => {
-                                        return b.deleted
-                                    }).sort((a, b) => a.name.localeCompare(b.name))
-                                    .map((b) => (
-                                        <TableRow key={b.id}>
-                                            <TableCell className="font-medium">{b.name}</TableCell>
-                                            <TableCell>{b.price.toFixed(2)}€</TableCell>
-                                            <TableCell>{categoryMap[b.category]}</TableCell>
-                                            <TableCell className="text-right">
+                        {/* Mobile Card View */}
+                        <div className="lg:hidden space-y-4">
+                            {buyables
+                                ?.filter((b) => !b.deleted)
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map((b) => (
+                                    <Card key={b.id}>
+                                        <CardHeader>
+                                            <CardTitle>{b.name}</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="flex items-center gap-2"><span className="text-muted-foreground">Preis:</span> {b.price.toFixed(2)}€</p>
+                                            <p>
+                                                <span className="text-muted-foreground">Lagerbestand:</span>{" "}
+                                                <span className={b.stock < 10 ? "text-destructive" : "text-primary"}>
+                                                    {b.stock}
+                                                </span>
+                                            </p>
+                                            <p><span className="text-muted-foreground">Kategorie:</span> {categoryMap[b.category]}</p>
+                                            <div className="flex justify-end gap-2 mt-2">
+                                                {b.id > 3 && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => {
+                                                            setSelectedBuyableForDeletion(b);
+                                                            setIsDeleteDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-destructive"/>
+                                                    </Button>
+                                                )}
                                                 <Button
                                                     variant="outline"
                                                     size="icon"
                                                     onClick={() => {
                                                         setSelectedBuyable(b);
-                                                        setIsRestoreDialogOpen(true)
+                                                        setIsRestockDialogOpen(true);
                                                     }}
                                                 >
-                                                    <ArchiveRestore className="h-4 w-4"/>
+                                                    <Plus className="h-4 w-4"/>
                                                 </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                            </TableBody>
-                        </Table>
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    onClick={() => {
+                                                        setSelectedBuyable(b);
+                                                        setEditBuyablePrice(b.price.toString());
+                                                        setEditBuyableStock(b.stock.toString());
+                                                        setEditBuyableCategory(b.category);
+                                                        setIsEditDialogOpen(true);
+                                                    }}
+                                                >
+                                                    <Edit className="h-4 w-4"/>
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                        </div>
                     </CardContent>
-                </Card>) : ''}
+                </Card>
+
+                {buyables && buyables.filter((b) => b.deleted).length > 0 ? (
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>Gelöschte Gegenstände</CardTitle>
+                            <div className="flex flex-row gap-4 items-center">
+                                <Trash2 className="h-5 w-5 text-muted-foreground"/>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            {/* Desktop Table View for Deleted Items */}
+                            <div className="hidden md:block">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Name</TableHead>
+                                            <TableHead>Preis</TableHead>
+                                            <TableHead>Kategorie</TableHead>
+                                            <TableHead className="text-right">Aktionen</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {buyables
+                                            ?.filter((b) => b.deleted)
+                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                            .map((b) => (
+                                                <TableRow key={b.id}>
+                                                    <TableCell className="font-medium">{b.name}</TableCell>
+                                                    <TableCell>{b.price.toFixed(2)}€</TableCell>
+                                                    <TableCell>{categoryMap[b.category]}</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="icon"
+                                                            onClick={() => {
+                                                                setSelectedBuyable(b);
+                                                                setIsRestoreDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            <ArchiveRestore className="h-4 w-4"/>
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                            {/* Mobile Card View for Deleted Items */}
+                            <div className="block md:hidden space-y-4">
+                                {buyables
+                                    ?.filter((b) => b.deleted)
+                                    .sort((a, b) => a.name.localeCompare(b.name))
+                                    .map((b) => (
+                                        <Card key={b.id}>
+                                            <CardHeader>
+                                                <CardTitle>{b.name}</CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <p>Preis: {b.price.toFixed(2)}€</p>
+                                                <p>Kategorie: {categoryMap[b.category]}</p>
+                                                <div className="flex justify-end gap-2 mt-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={() => {
+                                                            setSelectedBuyable(b);
+                                                            setIsRestoreDialogOpen(true);
+                                                        }}
+                                                    >
+                                                        <ArchiveRestore className="h-4 w-4"/>
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : null}
 
                 {/* Dialog zum Bearbeiten eines Buyables */}
                 {selectedBuyable && (
@@ -398,26 +490,26 @@ export default function InventoryPage() {
                                         ))}
                                     </select>
                                 </div>
-                                    <Button
-                                        className="w-full"
-                                        onClick={() => {
-                                            if (selectedBuyable) {
-                                                editBuyableMutation.mutate({
-                                                    id: selectedBuyable.id,
-                                                    price: parseFloat(editBuyablePrice),
-                                                    stock: parseInt(editBuyableStock),
-                                                    category: editBuyableCategory,
-                                                });
-                                            }
-                                        }}
-                                        disabled={editBuyableMutation.isPending}
-                                    >
-                                        Änderungen speichern
-                                    </Button>
-                                </div>
+                                <Button
+                                    className="w-full"
+                                    onClick={() => {
+                                        if (selectedBuyable) {
+                                            editBuyableMutation.mutate({
+                                                id: selectedBuyable.id,
+                                                price: parseFloat(editBuyablePrice),
+                                                stock: parseInt(editBuyableStock),
+                                                category: editBuyableCategory,
+                                            });
+                                        }
+                                    }}
+                                    disabled={editBuyableMutation.isPending}
+                                >
+                                    Änderungen speichern
+                                </Button>
+                            </div>
                         </DialogContent>
                     </Dialog>
-                    )}
+                )}
 
                 {/* Bestätigungsdialog zum Löschen eines Buyables */}
                 {selectedBuyableForDeletion && (
@@ -457,6 +549,7 @@ export default function InventoryPage() {
                         </DialogContent>
                     </Dialog>
                 )}
+
                 {/* Dialog für Restock */}
                 {selectedBuyable && (
                     <Dialog
@@ -544,5 +637,5 @@ export default function InventoryPage() {
                 )}
             </main>
         </div>
-);
+    );
 }

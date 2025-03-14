@@ -48,7 +48,6 @@ export default function AdminPage() {
     queryKey: ["/api/users"],
   });
 
-
   // State for dialog forms
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [depositAmount, setDepositAmount] = useState("");
@@ -66,13 +65,7 @@ export default function AdminPage() {
   const [selectedUserForDeletion, setSelectedUserForDeletion] = useState<User | null>(null);
 
   const depositMutation = useMutation({
-    mutationFn: async ({
-                         userId,
-                         amount,
-                       }: {
-      userId: number;
-      amount: number;
-    }) => {
+    mutationFn: async ({ userId, amount }: { userId: number; amount: number }) => {
       await apiRequest("POST", "/api/admin/deposit", { userId, amount });
     },
     onSuccess: () => {
@@ -84,17 +77,8 @@ export default function AdminPage() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: async ({
-                         userId,
-                         newPassword,
-                       }: {
-      userId: number;
-      newPassword: string;
-    }) => {
-      await apiRequest("POST", "/api/admin/reset-password", {
-        userId,
-        newPassword,
-      });
+    mutationFn: async ({ userId, newPassword }: { userId: number; newPassword: string }) => {
+      await apiRequest("POST", "/api/admin/reset-password", { userId, newPassword });
     },
     onSuccess: () => {
       toast({ title: "Passwort erfolgreich zurückgesetzt" });
@@ -110,33 +94,19 @@ export default function AdminPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: "Benutzer gelöscht" });
-      // Optionally close the dialog after deletion:
       setIsDeleteDialogOpen(false);
       setSelectedUserForDeletion(null);
     },
   });
 
   const createUserMutation = useMutation({
-    mutationFn: async ({
-                         username,
-                         password,
-                         isAdmin,
-                       }: {
-      username: string;
-      password: string;
-      isAdmin: boolean;
-    }) => {
-      await apiRequest("POST", "/api/admin/users", {
-        username,
-        password,
-        isAdmin,
-      });
+    mutationFn: async ({ username, password, isAdmin }: { username: string; password: string; isAdmin: boolean }) => {
+      await apiRequest("POST", "/api/admin/users", { username, password, isAdmin });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: "Benutzer erfolgreich erstellt" });
       setIsCreateUserDialogOpen(false);
-      // Reset the form fields
       setNewUsername("");
       setNewPassword("");
       setNewIsAdmin(false);
@@ -151,18 +121,12 @@ export default function AdminPage() {
   });
 
   const toggleAdminMutation = useMutation({
-    mutationFn: async ({
-                         userId,
-                         isAdmin,
-                       }: {
-      userId: number;
-      isAdmin: boolean;
-    }) => {
+    mutationFn: async ({ userId, isAdmin }: { userId: number; isAdmin: boolean }) => {
       await apiRequest("PATCH", `/api/admin/users/${userId}`, { isAdmin });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: `Benutzerrolle aktualisiert` });
+      toast({ title: "Benutzerrolle aktualisiert" });
     },
   });
 
@@ -171,7 +135,6 @@ export default function AdminPage() {
         <header className="border-b">
           <MainNav currentPath={window.location.pathname} />
         </header>
-
         <main className="container mx-auto px-4 py-8 space-y-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
@@ -232,38 +195,210 @@ export default function AdminPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Benutzername</TableHead>
-                    <TableHead>Kontostand</TableHead>
-                    <TableHead>Rolle</TableHead>
-                    <TableHead>Erfolge</TableHead>
-                    <TableHead className="text-right">Aktionen</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users
-                      ?.sort((a, b) => a.username.localeCompare(b.username))
-                      .map((u) => {
-                        const achievements = JSON.parse(u.achievements);
-                        return (
-                            <TableRow key={u.id}>
-                              <TableCell className="font-medium">{u.username}</TableCell>
-                              <TableCell
-                                  className={
-                                    u.balance < 0 ? "text-destructive" : "text-primary"
-                                  }
-                              >
-                                €{u.balance.toFixed(2)}
-                              </TableCell>
-                              <TableCell>
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Benutzername</TableHead>
+                      <TableHead>Kontostand</TableHead>
+                      <TableHead>Rolle</TableHead>
+                      <TableHead>Erfolge</TableHead>
+                      <TableHead className="text-right">Aktionen</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users
+                        ?.sort((a, b) => a.username.localeCompare(b.username))
+                        .map((u) => {
+                          const achievements = JSON.parse(u.achievements);
+                          return (
+                              <TableRow key={u.id}>
+                                <TableCell className="font-medium">{u.username}</TableCell>
+                                <TableCell className={u.balance < 0 ? "text-destructive" : "text-primary"}>
+                                  €{u.balance.toFixed(2)}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={u.isAdmin ? "default" : "secondary"}>
+                                    {u.isAdmin ? "Admin" : "Benutzer"}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex flex-wrap gap-1">
+                                    {achievements.map((achievement: any) => (
+                                        <Badge
+                                            key={achievement.id}
+                                            variant="outline"
+                                            className="text-xs hover:bg-accent cursor-help"
+                                            title={`${achievement.description} - Freigeschaltet: ${
+                                                achievement.unlockedAt
+                                                    ? new Date(achievement.unlockedAt).toLocaleString()
+                                                    : "Noch nicht"
+                                            }`}
+                                        >
+                                          {achievement.name}
+                                        </Badge>
+                                    ))}
+                                    {achievements.length === 0 && (
+                                        <span className="text-xs text-muted-foreground">
+                                  Noch keine Erfolge
+                                </span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex justify-end gap-2">
+                                    {/* Deposit Dialog */}
+                                    <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => {
+                                              setSelectedUser(u);
+                                              setIsDepositDialogOpen(true);
+                                            }}
+                                        >
+                                          <CreditCard className="h-4 w-4" />
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>
+                                            Geld einzahlen - {selectedUser?.username}
+                                          </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4 pt-4">
+                                          <Input
+                                              type="number"
+                                              placeholder="Betrag in €"
+                                              value={depositAmount}
+                                              onChange={(e) => setDepositAmount(e.target.value)}
+                                          />
+                                          <Button
+                                              className="w-full"
+                                              onClick={() => {
+                                                if (selectedUser) {
+                                                  depositMutation.mutate({
+                                                    userId: selectedUser.id,
+                                                    amount: parseFloat(depositAmount),
+                                                  });
+                                                }
+                                              }}
+                                              disabled={depositMutation.isPending}
+                                          >
+                                            Einzahlen
+                                          </Button>
+                                        </div>
+                                      </DialogContent>
+                                    </Dialog>
+
+                                    {/* Reset Password Dialog */}
+                                    <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => {
+                                              setSelectedUser(u);
+                                              setIsResetPasswordDialogOpen(true);
+                                            }}
+                                        >
+                                          <Key className="h-4 w-4" />
+                                        </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                        <DialogHeader>
+                                          <DialogTitle>
+                                            Passwort zurücksetzen - {selectedUser?.username}
+                                          </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4 pt-4">
+                                          <Input
+                                              type="password"
+                                              placeholder="Neues Passwort"
+                                              value={newPassword}
+                                              onChange={(e) => setNewPassword(e.target.value)}
+                                          />
+                                          <Button
+                                              className="w-full"
+                                              onClick={() => {
+                                                if (selectedUser) {
+                                                  resetPasswordMutation.mutate({
+                                                    userId: selectedUser.id,
+                                                    newPassword,
+                                                  });
+                                                }
+                                              }}
+                                              disabled={resetPasswordMutation.isPending}
+                                          >
+                                            Passwort zurücksetzen
+                                          </Button>
+                                        </div>
+                                      </DialogContent>
+                                    </Dialog>
+
+                                    {/* Toggle Admin Status */}
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => {
+                                          if (user.id !== u.id) {
+                                            toggleAdminMutation.mutate({
+                                              userId: u.id,
+                                              isAdmin: !u.isAdmin,
+                                            });
+                                          }
+                                        }}
+                                        disabled={user.id === u.id}
+                                    >
+                                      <ShieldCheck className={`h-4 w-4 ${u.isAdmin ? "text-primary" : ""}`} />
+                                    </Button>
+
+                                    {/* Delete User Dialog Trigger */}
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => {
+                                          setSelectedUserForDeletion(u);
+                                          setIsDeleteDialogOpen(true);
+                                        }}
+                                        disabled={user.id === u.id}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                          );
+                        })}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-4">
+                {users
+                    ?.sort((a, b) => a.username.localeCompare(b.username))
+                    .map((u) => {
+                      const achievements = JSON.parse(u.achievements);
+                      return (
+                          <Card key={u.id}>
+                            <CardHeader>
+                              <CardTitle>{u.username}</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Kontostand:</span> €{u.balance.toFixed(2)}
+                              </p>
+                              <p className="flex items-center gap-2">
+                                <span className="text-muted-foreground">Rolle:</span>
                                 <Badge variant={u.isAdmin ? "default" : "secondary"}>
                                   {u.isAdmin ? "Admin" : "Benutzer"}
                                 </Badge>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex flex-wrap gap-1">
+                              </p>
+                              <div>
+                                <span className="text-muted-foreground text-sm">Erfolge:</span>
+                                <div className="flex flex-wrap gap-1 mt-1">
                                   {achievements.map((achievement: any) => (
                                       <Badge
                                           key={achievement.id}
@@ -284,149 +419,133 @@ export default function AdminPage() {
                               </span>
                                   )}
                                 </div>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
-                                  {/* Deposit Dialog */}
-                                  <Dialog
-                                      open={isDepositDialogOpen}
-                                      onOpenChange={setIsDepositDialogOpen}
-                                  >
-                                    <DialogTrigger asChild>
+                              </div>
+                              <div className="flex justify-end gap-2 mt-2">
+                                {/* Deposit Dialog */}
+                                <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => {
+                                          setSelectedUser(u);
+                                          setIsDepositDialogOpen(true);
+                                        }}
+                                    >
+                                      <CreditCard className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>
+                                        Geld einzahlen - {selectedUser?.username}
+                                      </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 pt-4">
+                                      <Input
+                                          type="number"
+                                          placeholder="Betrag in €"
+                                          value={depositAmount}
+                                          onChange={(e) => setDepositAmount(e.target.value)}
+                                      />
                                       <Button
-                                          variant="outline"
-                                          size="icon"
+                                          className="w-full"
                                           onClick={() => {
-                                            setSelectedUser(u);
-                                            setIsDepositDialogOpen(true);
-                                          }}
-                                      >
-                                        <CreditCard className="h-4 w-4" />
-                                      </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                      <DialogHeader>
-                                        <DialogTitle>
-                                          Geld einzahlen - {selectedUser?.username}
-                                        </DialogTitle>
-                                      </DialogHeader>
-                                      <div className="space-y-4 pt-4">
-                                        <Input
-                                            type="number"
-                                            placeholder="Betrag in €"
-                                            value={depositAmount}
-                                            onChange={(e) =>
-                                                setDepositAmount(e.target.value)
+                                            if (selectedUser) {
+                                              depositMutation.mutate({
+                                                userId: selectedUser.id,
+                                                amount: parseFloat(depositAmount),
+                                              });
                                             }
-                                        />
-                                        <Button
-                                            className="w-full"
-                                            onClick={() => {
-                                              if (selectedUser) {
-                                                depositMutation.mutate({
-                                                  userId: selectedUser.id,
-                                                  amount: parseFloat(depositAmount),
-                                                });
-                                              }
-                                            }}
-                                            disabled={depositMutation.isPending}
-                                        >
-                                          Einzahlen
-                                        </Button>
-                                      </div>
-                                    </DialogContent>
-                                  </Dialog>
+                                          }}
+                                          disabled={depositMutation.isPending}
+                                      >
+                                        Einzahlen
+                                      </Button>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
 
-                                  {/* Reset Password Dialog */}
-                                  <Dialog
-                                      open={isResetPasswordDialogOpen}
-                                      onOpenChange={setIsResetPasswordDialogOpen}
-                                  >
-                                    <DialogTrigger asChild>
+                                {/* Reset Password Dialog */}
+                                <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => {
+                                          setSelectedUser(u);
+                                          setIsResetPasswordDialogOpen(true);
+                                        }}
+                                    >
+                                      <Key className="h-4 w-4" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>
+                                        Passwort zurücksetzen - {selectedUser?.username}
+                                      </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 pt-4">
+                                      <Input
+                                          type="password"
+                                          placeholder="Neues Passwort"
+                                          value={newPassword}
+                                          onChange={(e) => setNewPassword(e.target.value)}
+                                      />
                                       <Button
-                                          variant="outline"
-                                          size="icon"
+                                          className="w-full"
                                           onClick={() => {
-                                            setSelectedUser(u);
-                                            setIsResetPasswordDialogOpen(true);
-                                          }}
-                                      >
-                                        <Key className="h-4 w-4" />
-                                      </Button>
-                                    </DialogTrigger>
-                                    <DialogContent>
-                                      <DialogHeader>
-                                        <DialogTitle>
-                                          Passwort zurücksetzen - {selectedUser?.username}
-                                        </DialogTitle>
-                                      </DialogHeader>
-                                      <div className="space-y-4 pt-4">
-                                        <Input
-                                            type="password"
-                                            placeholder="Neues Passwort"
-                                            value={newPassword}
-                                            onChange={(e) =>
-                                                setNewPassword(e.target.value)
+                                            if (selectedUser) {
+                                              resetPasswordMutation.mutate({
+                                                userId: selectedUser.id,
+                                                newPassword,
+                                              });
                                             }
-                                        />
-                                        <Button
-                                            className="w-full"
-                                            onClick={() => {
-                                              if (selectedUser) {
-                                                resetPasswordMutation.mutate({
-                                                  userId: selectedUser.id,
-                                                  newPassword,
-                                                });
-                                              }
-                                            }}
-                                            disabled={resetPasswordMutation.isPending}
-                                        >
-                                          Passwort zurücksetzen
-                                        </Button>
-                                      </div>
-                                    </DialogContent>
-                                  </Dialog>
+                                          }}
+                                          disabled={resetPasswordMutation.isPending}
+                                      >
+                                        Passwort zurücksetzen
+                                      </Button>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
 
-                                  {/* Toggle Admin Status */}
-                                  <Button
-                                      variant="outline"
-                                      size="icon"
-                                      onClick={() => {
-                                        if (user.id !== u?.id) {
-                                          toggleAdminMutation.mutate({
-                                            userId: u.id,
-                                            isAdmin: !u.isAdmin,
-                                          });
-                                        }
-                                      }}
-                                      disabled={user.id === u?.id}
-                                  >
-                                    <ShieldCheck
-                                        className={`h-4 w-4 ${
-                                            u.isAdmin ? "text-primary" : ""
-                                        }`}
-                                    />
-                                  </Button>
+                                {/* Toggle Admin Status */}
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                      if (user.id !== u.id) {
+                                        toggleAdminMutation.mutate({
+                                          userId: u.id,
+                                          isAdmin: !u.isAdmin,
+                                        });
+                                      }
+                                    }}
+                                    disabled={user.id === u.id}
+                                >
+                                  <ShieldCheck className={`h-4 w-4 ${u.isAdmin ? "text-primary" : ""}`} />
+                                </Button>
 
-                                  {/* Delete User Dialog Trigger */}
-                                  <Button
-                                      variant="outline"
-                                      size="icon"
-                                      onClick={() => {
-                                        setSelectedUserForDeletion(u);
-                                        setIsDeleteDialogOpen(true);
-                                      }}
-                                      disabled={user.id === u?.id}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                        );
-                      })}
-                </TableBody>
-              </Table>
+                                {/* Delete User Dialog Trigger */}
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                      setSelectedUserForDeletion(u);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                    disabled={user.id === u.id}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                      );
+                    })}
+              </div>
             </CardContent>
           </Card>
 
