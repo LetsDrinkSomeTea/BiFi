@@ -68,13 +68,7 @@ export default function HomePage() {
   return (
       <div className="min-h-screen bg-background">
         <header className="border-b">
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Beer className="h-6 w-6" />
-              <h1 className="font-bold text-lg">BiFi Strichliste</h1>
-            </div>
-            <MainNav />
-          </div>
+            <MainNav currentPath={window.location.pathname} />
         </header>
 
         <main className="container mx-auto px-4 py-8 space-y-8">
@@ -95,17 +89,17 @@ export default function HomePage() {
                 <BuyButton
                     buyable={buyableMap[1]}
                     onBuy={purchaseMutation.mutate}
-                    icon={<Beer className="h-4 w-4 mr-2" />}
+                    icon={Beer}
                 />
                 <BuyButton
                     buyable={buyableMap[2]}
                     onBuy={purchaseMutation.mutate}
-                    icon={<GlassWater className="h-4 w-4 mr-2" />}
+                    icon={GlassWater}
                 />
                 <BuyButton
                     buyable={buyableMap[3]}
                     onBuy={purchaseMutation.mutate}
-                    icon={<Wine className="h-4 w-4 mr-2" />}
+                    icon={Wine}
                 />
 
                 {/* Dropdown für Buyables mit id 4 ... n */}

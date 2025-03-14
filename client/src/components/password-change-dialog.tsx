@@ -1,9 +1,19 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Key } from "lucide-react";
 
-function PasswordChangeDialog({ isOpen, onOpenChange, currentPassword, setCurrentPassword, newPassword, setNewPassword, onChangePassword }) {
+interface PasswordChangeDialogProps {
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
+    currentPassword: string;
+    setCurrentPassword: (password: string) => void;
+    newPassword: string;
+    setNewPassword: (password: string) => void;
+    onChangePassword: () => void;
+}
+
+function PasswordChangeDialog({ isOpen, onOpenChange, currentPassword, setCurrentPassword, newPassword, setNewPassword, onChangePassword }: PasswordChangeDialogProps) {
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
@@ -13,9 +23,7 @@ function PasswordChangeDialog({ isOpen, onOpenChange, currentPassword, setCurren
                 </Button>
             </DialogTrigger>
             <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Passwort ändern</DialogTitle>
-                </DialogHeader>
+                <DialogTitle>Passwort ändern</DialogTitle>
                 <div className="space-y-4 pt-4">
                     <Input
                         type="password"

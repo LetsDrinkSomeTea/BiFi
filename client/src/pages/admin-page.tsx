@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
-  Beer,
   Users,
   Trash2,
   Key,
@@ -32,7 +31,7 @@ import {
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import React, { useState } from "react";
 import { MainNav } from "@/components/main-nav";
 
 export default function AdminPage() {
@@ -169,13 +168,7 @@ export default function AdminPage() {
   return (
       <div className="min-h-screen bg-background">
         <header className="border-b">
-          <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Beer className="h-6 w-6" />
-              <h1 className="font-bold text-lg">BiFi Strichliste</h1>
-            </div>
-            <MainNav />
-          </div>
+          <MainNav currentPath={window.location.pathname} />
         </header>
 
         <main className="container mx-auto px-4 py-8 space-y-8">
