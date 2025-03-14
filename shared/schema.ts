@@ -37,6 +37,26 @@ export const buyables = pgTable("buyables", {
   deleted: boolean("deleted").notNull().default(false),
 })
 
+export interface BuyableCategory {
+  id: string;
+  displayName: string;
+}
+
+export const categories: BuyableCategory[] =
+    [
+      {id: "alcohol", displayName: "Alkohol"},
+      {id: "softdrink", displayName: "Softdrink"},
+      {id: "food", displayName: "Essen"},
+      {id: "snack", displayName: "Snacks"},
+      {id: "other", displayName: "Sonstiges"},
+    ];
+
+export const categoryIds = categories.map((category) => category.id);
+export const categoryMap = categories.reduce((map, category) => {
+  map[category.id] = category.displayName;
+  return map;
+}, {} as Record<string, string>);
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,

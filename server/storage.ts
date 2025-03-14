@@ -3,7 +3,7 @@ import db from './db';
 import {desc, eq, sql} from 'drizzle-orm';
 
 // Import your table definitions from your DB schema
-import {users, transactions, buyables} from '@shared/schema';
+import {users, transactions, buyables, categoryIds} from '@shared/schema';
 import { type User, type InsertUser, type Transaction, type Buyable } from '@shared/schema';
 import { type Achievement } from '@shared/achievements';
 
@@ -30,11 +30,13 @@ export interface IStorage {
   deleteBuyable(id: number, restore:boolean): Promise<void>;
 }
 
+
 // Create a class implementing the IStorage interface using Drizzle
 export class DrizzleStorage implements IStorage {
   private db = db;
 
-  //------USER-------
+
+//------USER-------
   async getUser(id: number): Promise<User | undefined> {
     const result = await this.db
         .select()
@@ -167,6 +169,7 @@ export class DrizzleStorage implements IStorage {
   }
 
   async createBuyable(buyable: Omit<Buyable, "id" | "stock" | "deleted">): Promise<Buyable> {
+    if (buyable.category && !categoryIds.includes(buyable.category)) return Promise.reject(new Error("Invalid category"));
     const [newBuyable] = await this.db
         .insert(buyables)
         .values({
@@ -182,6 +185,7 @@ export class DrizzleStorage implements IStorage {
 
 
   async updateBuyable(id: number, updates: Partial<Buyable>): Promise<Buyable> {
+    if (updates.category && !categoryIds.includes(updates.category)) return Promise.reject(new Error("Invalid category"));
     await this.db
         .update(buyables)
         .set(updates)
