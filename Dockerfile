@@ -30,5 +30,7 @@ RUN npm install
 # Kopiere den Build aus der Builder-Stage
 COPY --from=builder /app/dist ./dist
 
+COPY ./public ./public
+
 # Starte die Anwendung (STARt-Skript sollte den richtigen Befehl ausführen)
 CMD ["npm", "start"]
