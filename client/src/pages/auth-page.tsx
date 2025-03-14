@@ -6,20 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useLocation } from "wouter";
 import { Beer } from "lucide-react";
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user, loginMutation } = useAuth();
   const [, setLocation] = useLocation();
 
   const loginForm = useForm<InsertUser>({
-    resolver: zodResolver(insertUserSchema),
-    defaultValues: { username: "", password: "" }
-  });
-
-  const registerForm = useForm<InsertUser>({
     resolver: zodResolver(insertUserSchema),
     defaultValues: { username: "", password: "" }
   });
@@ -34,16 +28,9 @@ export default function AuthPage() {
       <div className="flex flex-col-reverse md:flex-row max-w-4xl w-full gap-8">
         <Card className="flex-1">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Willkommen</CardTitle>
+            <CardTitle className="text-2xl font-bold">Willkommen zurück</CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="space-y-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Anmelden</TabsTrigger>
-                <TabsTrigger value="register">Registrieren</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="login">
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(data => loginMutation.mutate(data))} className="space-y-4">
                     <FormField
@@ -77,44 +64,6 @@ export default function AuthPage() {
                     </Button>
                   </form>
                 </Form>
-              </TabsContent>
-
-              <TabsContent value="register">
-                <Form {...registerForm}>
-                  <form onSubmit={registerForm.handleSubmit(data => registerMutation.mutate(data))} className="space-y-4">
-                    <FormField
-                      control={registerForm.control}
-                      name="username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Benutzername</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={registerForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Passwort</FormLabel>
-                          <FormControl>
-                            <Input type="password" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-                      Registrieren
-                    </Button>
-                  </form>
-                </Form>
-              </TabsContent>
-            </Tabs>
           </CardContent>
         </Card>
 
