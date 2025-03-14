@@ -17,7 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {Trash2, Plus, Edit, Package} from "lucide-react";
+import {Trash2, Plus, Edit, Package, ArchiveRestore} from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import React, { useState } from "react";
@@ -47,6 +47,7 @@ export default function InventoryPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isRestockDialogOpen, setIsRestockDialogOpen] = useState(false);
+  const [isRestoreDialogOpen, setIsRestoreDialogOpen] = useState(false);
 
   const [selectedBuyable, setSelectedBuyable] = useState<Buyable | null>(null);
   const [selectedBuyableForDeletion, setSelectedBuyableForDeletion] = useState<Buyable | null>(null);
@@ -125,6 +126,19 @@ export default function InventoryPage() {
       setSelectedBuyableForDeletion(null);
     },
   });
+  
+  // Mutation zum Wiederherstellen eines Buyables
+  const restoreBuyableMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("PATCH", `/api/admin/buyables/${id}/restore`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({queryKey: ["/api/buyables"]});
+      toast({title: "Buyable erfolgreich wiederhergestellt"});
+      setIsRestoreDialogOpen(false);
+      setSelectedBuyable(null);
+    },
+  });
 
   // Mutation zum restocken eines Buyables
   const restockBuyableMutation = useMutation({
@@ -154,7 +168,7 @@ export default function InventoryPage() {
         <main className="container mx-auto px-4 py-8 space-y-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Buyables</CardTitle>
+              <CardTitle>Inventar</CardTitle>
               <div className="flex flex-row gap-4 items-center">
                 <Package className="h-5 w-5 text-muted-foreground" />
                 {/* Dialog zum Erstellen eines neuen Buyables */}
@@ -235,15 +249,15 @@ export default function InventoryPage() {
                                 {/* Löschen Button*/}
                                 {b.id > 3 ? ( // Bier, Wein und Softdrinks können nicht gelöscht werden
                                     <Button
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => {
-                                      setSelectedBuyableForDeletion(b);
-                                      setIsDeleteDialogOpen(true);
-                                    }}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>) : ''
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => {
+                                          setSelectedBuyableForDeletion(b);
+                                          setIsDeleteDialogOpen(true);
+                                        }}
+                                    >
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>) : ''
                                 }
                                 {/* Aufstocken */}
                                 <Button
@@ -278,6 +292,49 @@ export default function InventoryPage() {
               </Table>
             </CardContent>
           </Card>
+          {buyables!.filter((b) => {return b.deleted}).length > 0 ? (<Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Gelöschte Gegenstände</CardTitle>
+              <div className="flex flex-row gap-4 items-center">
+                <Trash2 className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Preis</TableHead>
+                    <TableHead>Kategorie</TableHead>
+                    <TableHead className="text-right">Aktionen</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {buyables
+                      ?.filter((b) => {return b.deleted}).sort((a, b) => a.name.localeCompare(b.name))
+                      .map((b) => (
+                          <TableRow key={b.id}>
+                            <TableCell className="font-medium">{b.name}</TableCell>
+                            <TableCell>{b.price.toFixed(2)}€</TableCell>
+                            <TableCell>{b.category}</TableCell>
+                            <TableCell className="text-right">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                      setSelectedBuyable(b);
+                                      setIsRestoreDialogOpen(true)
+                                    }}
+                                >
+                                  <ArchiveRestore className="h-4 w-4" />
+                                </Button>
+                            </TableCell>
+                          </TableRow>
+                      ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>) : ''}
 
           {/* Dialog zum Bearbeiten eines Buyables */}
           {selectedBuyable && (
@@ -417,6 +474,45 @@ export default function InventoryPage() {
                           disabled={deleteBuyableMutation.isPending}
                       >
                         Aufstocken
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+          )}
+
+          {/* Bestätigungsdialog zum Wiederherstellen eines Buyables */}
+          {selectedBuyable && (
+              <Dialog
+                  open={isRestoreDialogOpen}
+                  onOpenChange={(open) => {
+                    if (!open) {
+                      setSelectedBuyable(null);
+                    }
+                    setIsRestoreDialogOpen(open);
+                  }}
+              >
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Wiederherstellen bestätigen</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 pt-4">
+                    <p>
+                      Bist du sicher, dass du das Buyable{" "}
+                      <strong>{selectedBuyable.name}</strong> wiederherstellen möchtest?
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <DialogTrigger asChild>
+                        <Button variant="outline">Abbrechen</Button>
+                      </DialogTrigger>
+                      <Button
+                          variant="default"
+                          onClick={() =>
+                              restoreBuyableMutation.mutate(selectedBuyable.id)
+                          }
+                          disabled={restoreBuyableMutation.isPending}
+                      >
+                        Wiederherstellen
                       </Button>
                     </div>
                   </div>
