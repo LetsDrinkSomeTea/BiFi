@@ -127,7 +127,7 @@ export default function StatisticsPage() {
               </CardContent>
             </Card>
 
-            <Card>
+            {personalStats.averagePurchaseTime && (<Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Durchschnittliche Uhrzeit</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
@@ -135,10 +135,10 @@ export default function StatisticsPage() {
               <CardContent>
                 <div className="text-2xl font-bold">{personalStats.averagePurchaseTime || "N/A"}</div>
                 <p className="text-xs text-muted-foreground">
-                  Aktivster Tag: <span className="text-foreground">{personalStats.mostActiveDay || "Noch nicht genug Daten"}</span>
+                  Aktivster Tag: <span className="text-foreground">{personalStats.mostActiveDay || "N/A"}</span>
                 </p>
               </CardContent>
-            </Card>
+            </Card>)}
 
           {/* Diagramme */}
           <div className="grid gap-4 md:grid-cols-2">
@@ -211,7 +211,6 @@ export default function StatisticsPage() {
                       <Tooltip
                           formatter={(value: number) => [
                             `${timeMetric === "totalAmount" ? `${value.toFixed(2)}€` : `${value}`}`,
-                            dayMetric === "amount" ? "Ausgaben" : "Käufe",
                           ]}
                       />
                       <Bar dataKey={dayMetric} fill="hsl(var(--primary))" />
@@ -253,8 +252,7 @@ export default function StatisticsPage() {
                               `${hour}:00 - ${(hour + 1) % 24}:00`
                           }
                           formatter={(value: number) => [
-                            `${timeMetric === "totalAmount" ? `${value.toFixed(2)}€` : `${value}`}`,
-                            hourMetric === "amount" ? "Ausgaben" : "Käufe",
+                            `${timeMetric === "amount" ? `${value.toFixed(2)}€` : `${value}`}`,
                           ]}
                       />
                       <Bar dataKey={hourMetric} fill="hsl(var(--primary))" />

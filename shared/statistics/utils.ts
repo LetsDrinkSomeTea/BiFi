@@ -13,17 +13,19 @@ import {
   HourlyStatistics,
   DayOfWeekStatistics,
   TimeStatistics,
-  SystemStatistics, TimeRange,
+  SystemStatistics,
+  TimeRange,
 } from "@shared/statistics/types";
 import { storage } from "server/storage";
+import { toZonedTime } from "date-fns-tz";
 
 /**
  * Berechnet die Statistiken für einen Nutzer und das gesamte System innerhalb eines gegebenen Zeitbereichs.
  */
 export async function calculateStatistics({
-                                            userId,
-                                            timeRange,
-                                          }: StatisticsParams): Promise<Statistics> {
+  userId,
+  timeRange,
+}: StatisticsParams): Promise<Statistics> {
   // Hole die Transaktionen des Nutzers und alle Systemtransaktionen
   const userTransactions: Transaction[] = await storage.getTransactions(userId);
   const allTransactions: Transaction[] = await storage.getAllTransactions();
@@ -33,21 +35,22 @@ export async function calculateStatistics({
 
   // Filtere Transaktionen anhand des übergebenen Zeitbereichs
   const filteredUserTx = userTransactions.filter((tx) =>
-      filterByTimeRange(tx, timeRange)
+    filterByTimeRange(tx, timeRange)
   );
   const filteredAllTx = allTransactions.filter((tx) =>
-      filterByTimeRange(tx, timeRange)
+    filterByTimeRange(tx, timeRange)
   );
 
   // Trenne Käufe und Einzahlungen für den Nutzer
   const userPurchases = filteredUserTx
-      .filter((tx) => tx.type === "PURCHASE")
-      .map((tx) => ({ ...tx, amount: -tx.amount }));
+    .filter((tx) => tx.type === "PURCHASE")
+    .map((tx) => ({ ...tx, amount: -tx.amount })); // Umrechnung: Käufe als positive Beträge
   const userDeposits = filteredUserTx.filter((tx) => tx.type === "DEPOSIT");
 
   // Berechne Nutzerspezifische Statistiken
   const totalSpent = calculateTotalSpent(userPurchases);
-  const averagePurchaseAmount = userPurchases.length > 0 ? totalSpent / userPurchases.length : 0;
+  const averagePurchaseAmount =
+    userPurchases.length > 0 ? totalSpent / userPurchases.length : 0;
   const totalDeposited = calculateTotalDeposited(userDeposits);
   const purchaseCountTotal = userPurchases.length;
   const purchaseCountByItem = calculatePurchaseCountByItem(userPurchases, buyablesMap);
@@ -83,9 +86,13 @@ export async function calculateStatistics({
 
 /* Hilfsfunktionen */
 
-// Filtert eine Transaktion anhand des Zeitbereichs
-function filterByTimeRange(tx: Transaction, timeRange: { start?: Date; end: Date }): boolean {
-  const createdAt = new Date(tx.createdAt);
+// Filtert eine Transaktion anhand des Zeitbereichs in Berliner Zeit
+function filterByTimeRange(
+  tx: Transaction,
+  timeRange: { start?: Date; end: Date }
+): boolean {
+  // Konvertiere die Transaktionszeit in Berliner Zeit
+  const createdAt = toZonedTime(new Date(tx.createdAt), "Europe/Berlin");
   if (timeRange.start && createdAt < timeRange.start) return false;
   if (createdAt > timeRange.end) return false;
   return true;
@@ -102,27 +109,36 @@ function calculateTotalDeposited(deposits: Transaction[]): number {
 }
 
 // Gruppiert die Käufe des Nutzers nach Artikel und zählt diese
-function calculatePurchaseCountByItem(purchases: Transaction[], buyablesMap: BuyablesMap): CountByItem[] {
+function calculatePurchaseCountByItem(
+  purchases: Transaction[],
+  buyablesMap: BuyablesMap
+): CountByItem[] {
   const map = new Map<number, CountByItem>();
   for (const tx of purchases) {
     if (tx.item == null) continue;
     if (map.has(tx.item)) {
       map.get(tx.item)!.count++;
     } else {
-      map.set(tx.item, { itemId: tx.item, name: buyablesMap[tx.item].name, count: 1 });
+      map.set(tx.item, {
+        itemId: tx.item,
+        name: buyablesMap[tx.item].name,
+        count: 1,
+      });
     }
   }
   return Array.from(map.values()).sort((a, b) => b.count - a.count);
 }
 
-// Berechnet stündliche Statistiken (Käufe und Beträge) über 24 Stunden
+// Berechnet stündliche Statistiken (Käufe und Beträge) in Berliner Zeit
 function calculateHourlyStatistics(purchases: Transaction[]): HourlyStatistics[] {
   const hourlyMap = new Map<number, { purchases: number; amount: number }>();
   for (let i = 0; i < 24; i++) {
     hourlyMap.set(i, { purchases: 0, amount: 0 });
   }
   purchases.forEach((tx) => {
-    const hour = new Date(tx.createdAt).getHours();
+    // Konvertiere das Datum in Berliner Zeit
+    const berlinDate = toZonedTime(new Date(tx.createdAt), "Europe/Berlin");
+    const hour = berlinDate.getHours();
     const stats = hourlyMap.get(hour)!;
     stats.purchases++;
     stats.amount += tx.amount;
@@ -134,13 +150,15 @@ function calculateHourlyStatistics(purchases: Transaction[]): HourlyStatistics[]
   }));
 }
 
-// Berechnet Statistiken für die einzelnen Wochentage
+// Berechnet Statistiken für die einzelnen Wochentage in Berliner Zeit
 function calculateDayOfWeekStatistics(purchases: Transaction[]): DayOfWeekStatistics[] {
   const dayMap = new Map<string, { purchases: number; amount: number }>();
   // Initialisiere mit den Tagen aus DAYS_OF_WEEK
   DAYS_OF_WEEK.forEach((day) => dayMap.set(day, { purchases: 0, amount: 0 }));
   purchases.forEach((tx) => {
-    const dayAbbr = getDayAbbreviation(new Date(tx.createdAt));
+    // Konvertiere die Transaktionszeit in Berliner Zeit
+    const berlinDate = toZonedTime(new Date(tx.createdAt), "Europe/Berlin");
+    const dayAbbr = getDayAbbreviation(berlinDate);
     if (dayMap.has(dayAbbr)) {
       const stats = dayMap.get(dayAbbr)!;
       stats.purchases++;
@@ -154,25 +172,31 @@ function calculateDayOfWeekStatistics(purchases: Transaction[]): DayOfWeekStatis
   }));
 }
 
-// Wandelt ein Datum in die Wochentagsabkürzung (Mo, Di, …, So) um
+// Wandelt ein Datum in die Wochentagsabkürzung (Mo, Di, …, So) um in Berliner Zeit
 function getDayAbbreviation(date: Date): string {
-  return DAYS_OF_WEEK[date.getDay()];
+  const berlinDate = toZonedTime(date, "Europe/Berlin");
+  return DAYS_OF_WEEK[berlinDate.getDay()];
 }
 
-function calculateTimeline(purchases: Transaction[], timeSpan: TimeRange): TimeStatistics[] {
+// Berechnet die Tages-Timeline in Berliner Zeit: Für jeden Tag im Zeitraum (auch ohne Käufe)
+function calculateTimeline(
+  purchases: Transaction[],
+  timeSpan: TimeRange
+): TimeStatistics[] {
   // Erstelle eine Map, um Käufe nach Tag zu gruppieren.
   const timelineMap = new Map<
-      string,
-      { date: Date; totalPurchases: number; totalAmount: number; uniqueUsers: Set<number> }
+    string,
+    { date: Date; totalPurchases: number; totalAmount: number; uniqueUsers: Set<number> }
   >();
 
   // Nur Transaktionen berücksichtigen, die innerhalb des Zeitraums liegen.
   purchases.forEach((tx) => {
-    const date = new Date(tx.createdAt);
+    // Konvertiere die Transaktionszeit in Berliner Zeit
+    const berlinDate = toZonedTime(new Date(tx.createdAt), "Europe/Berlin");
     // Überspringe Transaktionen, die vor dem Start oder nach dem Enddatum liegen.
-    if (timeSpan.start && date < timeSpan.start) return;
-    if (date > timeSpan.end) return;
-    const key = date.toISOString().split("T")[0];
+    if (timeSpan.start && berlinDate < timeSpan.start) return;
+    if (berlinDate > timeSpan.end) return;
+    const key = berlinDate.toISOString().split("T")[0];
     if (!timelineMap.has(key)) {
       timelineMap.set(key, {
         date: new Date(key),
@@ -188,8 +212,8 @@ function calculateTimeline(purchases: Transaction[], timeSpan: TimeRange): TimeS
   });
 
   // Bestimme den Start- und Endtag: Falls timeSpan.start nicht definiert ist, nutzen wir timeSpan.end als einzigen Tag.
-  const startDate = timeSpan.start ? new Date(timeSpan.start) : new Date(timeSpan.end);
-  const endDate = new Date(timeSpan.end);
+  const startDate = timeSpan.start ? toZonedTime(new Date(timeSpan.start), "Europe/Berlin") : toZonedTime(new Date(timeSpan.end), "Europe/Berlin");
+  const endDate = toZonedTime(new Date(timeSpan.end), "Europe/Berlin");
 
   // Erzeuge für jeden Tag im Zeitraum einen Eintrag (auch wenn keine Käufe vorhanden sind)
   const result: TimeStatistics[] = [];
@@ -216,16 +240,20 @@ function calculateTimeline(purchases: Transaction[], timeSpan: TimeRange): TimeS
   return result;
 }
 
-// Berechnet die durchschnittliche Kaufzeit (HH:mm) über alle Käufe
+// Berechnet die durchschnittliche Kaufzeit (HH:mm) in Berliner Zeit über alle Käufe
 function calculateAveragePurchaseTime(purchases: Transaction[]): string | null {
   if (purchases.length === 0) return null;
+  
   const totalMinutes = purchases.reduce((sum, tx) => {
-    const date = new Date(tx.createdAt);
-    return sum + date.getHours() * 60 + date.getMinutes();
+    // Konvertiere in Berliner Zeit
+    const berlinDate = toZonedTime(new Date(tx.createdAt), "Europe/Berlin");
+    return sum + berlinDate.getHours() * 60 + berlinDate.getMinutes();
   }, 0);
+  
   const avgMinutes = Math.floor(totalMinutes / purchases.length);
   const hours = Math.floor(avgMinutes / 60);
   const minutes = avgMinutes % 60;
+  
   return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
 }
 
@@ -237,15 +265,17 @@ function determineMostActiveDay(dayStats: DayOfWeekStatistics[]): string | null 
       mostActive = stat;
     }
   }
-  return mostActive ? DaysOfWeekMapToHumanReadable[mostActive.day] || mostActive.day : null;
+  return mostActive && mostActive.purchases > 0
+    ? DaysOfWeekMapToHumanReadable[mostActive.day] || mostActive.day
+    : null;
 }
 
-// Berechnet die Systemstatistiken aus allen Kauftransaktionen
+// Berechnet die Systemstatistiken aus allen Kauftransaktionen (keine Zeitzonenanpassung nötig)
 function calculateSystemStatistics(purchases: Transaction[]): SystemStatistics {
   const totalPurchases = purchases.length;
   const totalAmount = -purchases.reduce((sum, tx) => sum + tx.amount, 0);
   const averagePurchaseAmount =
-      totalPurchases > 0 ? totalAmount / totalPurchases : 0;
+    totalPurchases > 0 ? totalAmount / totalPurchases : 0;
   const uniqueActiveUsers = new Set(purchases.map((tx) => tx.userId)).size;
   return {
     totalPurchases,
