@@ -4,9 +4,7 @@ import {comparePasswords, hashPassword, setupAuth} from "./auth";
 import {storage} from "./storage";
 import {Achievement, achievements, checkForNewAchievements} from "@shared/achievements";
 import {calculateStatistics} from "@shared/statistics/utils";
-import {Buyable, BuyablesMap} from "@shared/schema.ts";
-import React from "react";
-
+import {Buyable} from "@shared/schema.ts";
 function requireAuth(req: Request) {
   if (!req.isAuthenticated()) {
     throw new Error("Unauthorized");
@@ -220,32 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // New Statistics Routes
-  app.get("/api/stats/system", async (req, res) => {
-    try {
-      requireAuth(req);
-      const end = new Date();
-      const start = new Date(end);
-      start.setDate(end.getDate()); // Default to 7 days
-
-      if (req.query.days) {
-        start.setDate(end.getDate() - parseInt(req.query.days as string));
-      }
-
-      const transactions = await storage.getAllTransactions();
-      const users = await storage.getAllUsers();
-
-      const stats = calculateStatistics(users, transactions, {
-        timeRange: { start, end }
-      });
-
-      res.json(stats);
-    } catch (err) {
-      res.status(400).json({ error: (err as Error).message });
-    }
-  });
-
-  app.get("/api/stats/user/:userId", async (req, res) => {
+  app.get("/api/stats/:userId", async (req, res) => {
     try {
       requireAuth(req);
       // Users can only access their own statistics
@@ -253,17 +226,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error("Forbidden");
       }
 
-      const end = new Date();
-      const start = new Date(end);
+      const {from, to} = req.query;
 
-      const days = req.query.days ? parseInt(req.query.days as string) : 7;
-      start.setDate(end.getDate() - days);
+      const start = from ? new Date(from as string) : undefined;
+      const end = to ? new Date(to as string) : new Date();
+      end.setHours(23, 59, 59, 999);
 
-      const user = await storage.getUser(parseInt(req.params.userId));
-      const transactions = await storage.getTransactions(parseInt(req.params.userId));
-
-      const stats = calculateStatistics([user!], transactions, {
-        timeRange: {start, end},
+      const stats = await calculateStatistics({
+          userId: req.user!.id,
+          timeRange: {start, end}
       });
 
       res.json(stats);
@@ -284,11 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/buyables/map", async (req, res) => {
     try {
-      const buyables = await storage.getAllBuyables();
-      const buyablesMap: BuyablesMap = buyables.reduce((map, buyable) => {
-        map[buyable.id] = buyable;
-        return map;
-      }, {} as Record<string, Buyable>);
+      const buyablesMap = await storage.getBuyablesMap();
       res.json(buyablesMap);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });

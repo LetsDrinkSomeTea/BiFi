@@ -1,25 +1,25 @@
 export interface TimeRange {
-  start: Date;
+  start?: Date;
   end: Date;
-}
-
-export interface StatisticsFilters {
-  timeRange: TimeRange;
 }
 
 export interface UserStatistics {
   totalSpent: number;
+  averagePurchaseAmount: number;
   totalDeposited: number;
   balance: number;
   purchaseCountTotal: number;
   purchaseCountByItem: CountByItem[];
+  hourlyStatistics: HourlyStatistics[];
+  dayOfWeekStatistics: DayOfWeekStatistics[];
+  timeline: TimeStatistics[];
   averagePurchaseTime: string | null;
   mostActiveDay: string | null;
 }
 
 export interface CountByItem {
   itemId: number;
-  name?: string;
+  name: string;
   count: number;
 }
 
@@ -42,15 +42,19 @@ export interface HourlyStatistics {
   amount: number;
 }
 
+export interface SystemStatistics {
+  totalPurchases: number;
+  totalAmount: number;
+  averagePurchaseAmount: number;
+  uniqueActiveUsers: number;
+}
+
 export interface Statistics {
-  users: UserStatistics[];
-  timeline: TimeStatistics[];
-  dayOfWeek: DayOfWeekStatistics[];
-  hourly: HourlyStatistics[];
-  totals: {
-    totalPurchases: number;
-    totalAmount: number;
-    averagePurchaseAmount: number;
-    uniqueUsers: number;
-  };
+  users: UserStatistics;
+  system: SystemStatistics;
+}
+
+export interface StatisticsParams {
+  userId: number;
+  timeRange: TimeRange;
 }

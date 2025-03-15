@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Buyable, Transaction } from "@shared/schema";
+import {Buyable, BuyablesMap, Transaction} from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BuyButton } from "@/components/ui/buy-button.tsx";
@@ -14,20 +14,21 @@ import React from "react";
 
 export default function HomePage() {
   const { user } = useAuth();
+  if (!user) {return <div>Keine Berechtigung</div>;}
 
   const { data: transactions } = useQuery<Transaction[]>({
     queryKey: ["/api/transactions"],
   });
 
-  const { data: buyables } = useQuery<Buyable[]>({
+  const { data: buyables, isLoading: isLoadingBuyables } = useQuery<Buyable[]>({
     queryKey: ["/api/buyables"],
   });
 
-  const { data: buyablesMap } = useQuery<Buyable[]>({
+  const { data: buyablesMap, isLoading: isLoadingBuyablesMap } = useQuery<BuyablesMap>({
     queryKey: ["/api/buyables/map"],
   });
 
-  if (!buyablesMap) {throw new Error("Keine Buyables gefunden");}
+
   // Filter für Buyables mit id 4 ... n
   const otherBuyables = React.useMemo(() => {
     return buyables ? buyables.filter((b) => b.id >= 4 && !b.deleted).sort((a,b) => a.name.localeCompare(b.name)) : [];
@@ -58,6 +59,14 @@ export default function HomePage() {
   const [activeTooltipId, setActiveTooltipId] = React.useState<string | null>(null);
   const achievements = user ? JSON.parse(user.achievements) : [];
 
+  if (isLoadingBuyables || isLoadingBuyablesMap || !buyables || !buyablesMap) {
+    return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-pulse">Dashboard wird geladen...</div>
+        </div>
+    );
+  }
+
   return (
       <div className="min-h-screen bg-background">
         <header className="border-b">
@@ -80,17 +89,17 @@ export default function HomePage() {
                 </p>
                 {/* Fixe Buttons für die Buyable IDs 1, 2 und 3 */}
                 <BuyButton
-                    buyable={buyablesMap[1]}
+                    buyable={buyablesMap![1]}
                     onBuy={purchaseMutation.mutate}
                     icon={Beer}
                 />
                 <BuyButton
-                    buyable={buyablesMap[2]}
+                    buyable={buyablesMap![2]}
                     onBuy={purchaseMutation.mutate}
                     icon={GlassWater}
                 />
                 <BuyButton
-                    buyable={buyablesMap[3]}
+                    buyable={buyablesMap![3]}
                     onBuy={purchaseMutation.mutate}
                     icon={Wine}
                 />
@@ -155,7 +164,7 @@ export default function HomePage() {
                   {transactions?.slice(0, 5).map((transaction) => {
                     // Wir gehen davon aus, dass transaction.item die buyableId enthält
                     const buyableName =
-                        buyablesMap[transaction.item as number]?.name || transaction.item;
+                        buyablesMap![transaction.item as number]?.name || transaction.item;
                     return (
                         <div key={transaction.id} className="flex justify-between">
                           <div className="text-sm text-muted-foreground w-32">

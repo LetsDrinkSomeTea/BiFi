@@ -1,6 +1,6 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
-import { Statistics, CountByItem,  } from "@shared/statistics/types";
+import { Statistics } from "@shared/statistics/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {Beer, Clock, Euro, MonitorCog, Users} from "lucide-react";
+import { Beer, Clock, Euro, MonitorCog, Users } from "lucide-react";
 import {
   LineChart,
   Line,
@@ -25,299 +25,314 @@ import React, { useState } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { MainNav } from "@/components/main-nav";
-import {Buyable} from "@shared/schema.ts";
 
 export default function StatisticsPage() {
   const { user } = useAuth();
-  const [days, setDays] = useState("7");
 
-  const {data: personalStats, isLoading: isLoadingPersonal} = useQuery<Statistics>({
-    queryKey: [`/api/stats/user/${user?.id}?days=${days}`],
+  // Setze Standardwerte: Standardmäßig geht der Zeitraum von vor 7 Tagen bis heute.
+  const today = new Date().toISOString().split("T")[0];
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+
+  const [startDate, setStartDate] = useState(sevenDaysAgo);
+  const [endDate, setEndDate] = useState(today);
+
+  // State zur Auswahl der Metrik für die Diagramme:
+  // Für "Käufe über die Zeit": totalPurchases oder totalAmount
+  const [timeMetric, setTimeMetric] = useState("totalPurchases");
+  // Für "Käufe nach Wochentagen": purchases oder amount
+  const [dayMetric, setDayMetric] = useState("purchases");
+  // Für "Käufe pro Stunde": purchases oder amount
+  const [hourMetric, setHourMetric] = useState("purchases");
+
+  // Query-Key beinhaltet nun auch from und to als Parameter
+  const { data: statistics, isLoading } = useQuery<Statistics>({
+    queryKey: [`/api/stats/${user?.id}`, { from: startDate, to: endDate }],
+    queryFn: async ({ queryKey }) => {
+      const [base, { from, to }] = queryKey as [string, { from: string; to: string }];
+      const res = await fetch(`${base}?from=${from}&to=${to}`);
+      if (!res.ok) throw new Error("Fehler beim Laden der Statistiken");
+      return res.json();
+    },
     enabled: !!user?.id,
   });
 
-  const { data: systemStats, isLoading: isLoadingSystem } = useQuery<Statistics>({
-    queryKey: ["/api/stats/system", days],
-  });
-
-  const { data: buyablesMap } = useQuery<Buyable[]>({
-    queryKey: ["/api/buyables/map"],
-  });
-
-  if (isLoadingPersonal || isLoadingSystem || !personalStats || !systemStats || !buyablesMap) {
+  if (isLoading || !statistics) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse">Statistiken werden geladen...</div>
-      </div>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-pulse">Statistiken werden geladen...</div>
+        </div>
     );
   }
 
-    const countByItemWithBuyableName = personalStats.users[0].purchaseCountByItem.slice(0, 5)
-        .map((item): CountByItem => ({
-            itemId: item.itemId,
-            name: buyablesMap[item.itemId].name,
-            count: item.count
-        }));
+  const personalStats = statistics.users;
+  const systemStats = statistics.system;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
-        <MainNav currentPath={window.location.pathname} />
-      </header>
+      <div className="min-h-screen bg-background">
+        <header className="border-b">
+          <MainNav currentPath={window.location.pathname} />
+        </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
-
-        {/* Personal Overview Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <main className="container mx-auto px-4 py-8 space-y-8">
+          {/* Zeit-Auswahl-Card */}
           <Card>
             <CardHeader>
               <CardTitle>Statistiken</CardTitle>
             </CardHeader>
-            <CardContent className="flex gap-4">
-              <div className="flex flex-grow">
-                <Select value={days} onValueChange={setDays}>
-                  <SelectTrigger>
-                    <SelectValue/>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="7">der letzten 7 Tage</SelectItem>
-                    <SelectItem value="30">der letzten 30 Tage</SelectItem>
-                    <SelectItem value="90">der letzten 90 Tage</SelectItem>
-                    <SelectItem value="365">des letzten Jahres</SelectItem>
-                  </SelectContent>
-                </Select>
+            <CardContent className="flex flex-col md:flex-row items-center gap-4">
+              <div className="flex flex-col">
+                <div className="text-muted-foreground text-sm">Von:</div>
+                <input
+                    type="date"
+                    lang="de-DE"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="p-2 border rounded"
+                />
+              </div>
+              <div className="flex flex-col">
+                <div className="text-muted-foreground text-sm">Bis:</div>
+                <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="p-2 border rounded"
+                />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Meine Käufe
-              </CardTitle>
-              <Beer className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {personalStats.totals.totalPurchases}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Meine Ausgaben
-              </CardTitle>
-              <Euro className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {personalStats.totals.totalAmount.toFixed(2)}€
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Ø {personalStats.totals.averagePurchaseAmount.toFixed(2)}€ pro Einkauf
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Durchschnittliche Uhrzeit
-              </CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {personalStats.users[0].averagePurchaseTime || "N/A"}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {personalStats.users[0].mostActiveDay || "Noch nicht genug Daten"}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Meine Käufe</CardTitle>
+                <Beer className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{personalStats.purchaseCountTotal}</div>
+              </CardContent>
+            </Card>
 
-        {/* Charts */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Käufe über die Zeit</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={personalStats.timeline}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={(date) => format(new Date(date), "d. MMM", { locale: de })}
-                    />
-                    <YAxis />
-                    <Tooltip
-                      labelFormatter={(date) =>
-                        format(new Date(date), "d. MMM yyyy", { locale: de })
-                      }
-                      formatter={(value: number) => [
-                        `${value.toFixed(2)}€`,
-                        "Betrag",
-                      ]}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="totalAmount"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Meine Ausgaben</CardTitle>
+                <Euro className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{personalStats.totalSpent.toFixed(2)}€</div>
+                <p className="text-xs text-muted-foreground">
+                  Ø {personalStats.averagePurchaseAmount.toFixed(2)}€ pro Einkauf
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Käufe nach Wochentagen</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={personalStats.dayOfWeek}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis />
-                    <Tooltip
-                      formatter={(value: number) => [
-                        `${value.toFixed(2)}€`,
-                        "Betrag",
-                      ]}
-                    />
-                    <Bar dataKey="amount" fill="hsl(var(--primary))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Durchschnittliche Uhrzeit</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{personalStats.averagePurchaseTime || "N/A"}</div>
+                <p className="text-xs text-muted-foreground">
+                  Aktivster Tag: <span className="text-foreground">{personalStats.mostActiveDay || "Noch nicht genug Daten"}</span>
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Käufe pro Stunde</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={personalStats.hourly}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="hour"
-                      tickFormatter={(hour) => `${hour}:00`}
-                    />
-                    <YAxis />
-                    <Tooltip
-                      labelFormatter={(hour) =>
-                        `${hour}:00 - ${(hour + 1) % 24}:00`
-                      }
-                      formatter={(value: number) => [
-                        `${value.toFixed(2)}€`,
-                        "Betrag",
-                      ]}
-                    />
-                    <Bar dataKey="amount" fill="hsl(var(--primary))" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Diagramme */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Diagramm: Käufe über die Zeit */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Aktivität über die Zeit</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Metrik:</span>
+                  <Select value={timeMetric} onValueChange={setTimeMetric}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="totalPurchases">Käufe</SelectItem>
+                      <SelectItem value="totalAmount">Ausgaben</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={personalStats.timeline}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                          dataKey="date"
+                          tickFormatter={(date) => format(new Date(date), "d. MMM", { locale: de })}
+                      />
+                      <YAxis />
+                      <Tooltip
+                          labelFormatter={(date) =>
+                              format(new Date(date), "d. MMM yyyy", { locale: de })
+                          }
+                          formatter={(value: number) => [
+                            `${timeMetric === "totalAmount" ? `${value.toFixed(2)}€` : `${value}`}`,
+                          ]}
+                      />
+                      <Line type="monotone" dataKey={timeMetric} stroke="hsl(var(--primary))" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Beliebte Kategorien</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px] content-center">
-                {countByItemWithBuyableName.length > 0 ?
-                  (<ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={countByItemWithBuyableName}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip
-                        formatter={(value: number) => [
-                          `${value}`,
-                          "Stück",
-                        ]}
-                    />
-                    <Bar dataKey="count" fill="hsl(var(--primary))" />
-                  </BarChart>
-                </ResponsiveContainer>)
-                  : (
+            {/* Diagramm: Käufe nach Wochentagen */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Aktivität nach Wochentagen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Metrik:</span>
+                  <Select value={dayMetric} onValueChange={setDayMetric}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="purchases">Käufe</SelectItem>
+                      <SelectItem value="amount">Ausgaben</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={personalStats.dayOfWeekStatistics}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="day" />
+                      <YAxis />
+                      <Tooltip
+                          formatter={(value: number) => [
+                            `${timeMetric === "totalAmount" ? `${value.toFixed(2)}€` : `${value}`}`,
+                            dayMetric === "amount" ? "Ausgaben" : "Käufe",
+                          ]}
+                      />
+                      <Bar dataKey={dayMetric} fill="hsl(var(--primary))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Diagramm: Käufe pro Stunde */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Aktivität pro Stunde</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Metrik:</span>
+                  <Select value={hourMetric} onValueChange={setHourMetric}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="purchases">Käufe</SelectItem>
+                      <SelectItem value="amount">Ausgaben</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={personalStats.hourlyStatistics}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                          dataKey="hour"
+                          tickFormatter={(hour) => `${hour}:00`}
+                      />
+                      <YAxis />
+                      <Tooltip
+                          labelFormatter={(hour) =>
+                              `${hour}:00 - ${(hour + 1) % 24}:00`
+                          }
+                          formatter={(value: number) => [
+                            `${timeMetric === "totalAmount" ? `${value.toFixed(2)}€` : `${value}`}`,
+                            hourMetric === "amount" ? "Ausgaben" : "Käufe",
+                          ]}
+                      />
+                      <Bar dataKey={hourMetric} fill="hsl(var(--primary))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Diagramm: Beliebteste Produkte */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Beliebteste Produkte</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] content-center">
+                  {personalStats.purchaseCountByItem.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={personalStats.purchaseCountByItem}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip formatter={(value: number) => [`${value}`, "Stück"]} />
+                          <Bar dataKey="count" fill="hsl(var(--primary))" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                  ) : (
                       <div className="text-center text-lg text-muted-foreground">
                         Noch keine Einkäufe vorhanden
                       </div>
-                    )
-                }
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Systemweite Statistiken */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle>Systemweite Statistiken</CardTitle>
+              <MonitorCog className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-8 md:grid-cols-3">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Gesamtkäufe</CardTitle>
+                    <Beer className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{systemStats.totalPurchases}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Gesamtumsatz</CardTitle>
+                    <Euro className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{systemStats.totalAmount.toFixed(2)}€</div>
+                    <p className="text-xs text-muted-foreground">
+                      Ø €{systemStats.averagePurchaseAmount.toFixed(2)} pro Einkauf
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Aktive Nutzer</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{systemStats.uniqueActiveUsers}</div>
+                  </CardContent>
+                </Card>
               </div>
             </CardContent>
           </Card>
-
-
-        </div>
-        {/* System Overview Cards */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>
-              Systemweite Statistiken
-            </CardTitle>
-            <MonitorCog className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-8 md:grid-cols-3">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Gesamtkäufe
-                  </CardTitle>
-                  <Beer className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {systemStats.totals.totalPurchases}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Gesamtumsatz
-                  </CardTitle>
-                  <Euro className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {systemStats.totals.totalAmount.toFixed(2)}€
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Ø €{systemStats.totals.averagePurchaseAmount.toFixed(2)} pro Einkauf
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Aktive Nutzer
-                  </CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {systemStats.totals.uniqueUsers}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
-
-      </main>
-    </div>
+        </main>
+      </div>
   );
 }

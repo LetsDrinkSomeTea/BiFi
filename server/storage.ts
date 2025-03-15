@@ -3,9 +3,17 @@ import db from './db';
 import {desc, eq, sql} from 'drizzle-orm';
 
 // Import your table definitions from your DB schema
-import { users, transactions, buyables, categoryIds } from '@shared/schema';
-import { type User, type InsertUser, type Transaction, type Buyable } from '@shared/schema';
-import { type Achievement } from '@shared/achievements';
+import {
+  type Buyable,
+  buyables,
+  categoryIds,
+  type InsertUser,
+  type Transaction,
+  transactions,
+  type User,
+  users
+} from '@shared/schema';
+import {type Achievement} from '@shared/achievements';
 
 // Define the storage interface (same as before)
 export interface IStorage {
@@ -159,6 +167,14 @@ export class DrizzleStorage implements IStorage {
         .from(buyables)
         .where(eq(buyables.id, id));
     return result[0] as Buyable | undefined;
+  }
+
+  async getBuyablesMap(): Promise<Record<number, Buyable>> {
+    const buyables = await storage.getAllBuyables();
+    return buyables.reduce((map, buyable) => {
+      map[buyable.id] = buyable;
+      return map;
+    }, {} as Record<string, Buyable>);
   }
 
   async getAllBuyables(): Promise<Buyable[]> {

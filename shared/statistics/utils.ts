@@ -1,189 +1,256 @@
-import { Transaction, User } from "../schema";
-import { CountByItem, Statistics, StatisticsFilters, TimeRange, UserStatistics, TimeStatistics, DayOfWeekStatistics, HourlyStatistics } from "./types";
+import {
+  BuyablesMap,
+  DAYS_OF_WEEK,
+  DaysOfWeekMapToHumanReadable,
+  Transaction,
+  User,
+} from "@shared/schema";
+import {
+  Statistics,
+  StatisticsParams,
+  UserStatistics,
+  CountByItem,
+  HourlyStatistics,
+  DayOfWeekStatistics,
+  TimeStatistics,
+  SystemStatistics, TimeRange,
+} from "@shared/statistics/types";
+import { storage } from "server/storage";
 
-const DAYS_OF_WEEK = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+/**
+ * Berechnet die Statistiken für einen Nutzer und das gesamte System innerhalb eines gegebenen Zeitbereichs.
+ */
+export async function calculateStatistics({
+                                            userId,
+                                            timeRange,
+                                          }: StatisticsParams): Promise<Statistics> {
+  // Hole die Transaktionen des Nutzers und alle Systemtransaktionen
+  const userTransactions: Transaction[] = await storage.getTransactions(userId);
+  const allTransactions: Transaction[] = await storage.getAllTransactions();
+  const user: User | undefined = await storage.getUser(userId);
+  const buyablesMap = await storage.getBuyablesMap();
+  if (!user) throw new Error("User not found");
 
-function isInTimeRange(date: Date, range: TimeRange): boolean {
-  return date >= range.start && date <= range.end;
-}
+  // Filtere Transaktionen anhand des übergebenen Zeitbereichs
+  const filteredUserTx = userTransactions.filter((tx) =>
+      filterByTimeRange(tx, timeRange)
+  );
+  const filteredAllTx = allTransactions.filter((tx) =>
+      filterByTimeRange(tx, timeRange)
+  );
 
-function calculateUserStatistics(
-  user: User,
-  transactions: Transaction[],
-  timeRange: TimeRange
-): UserStatistics {
-  const userTransactions = transactions
-    .filter(t => t.userId === user.id && isInTimeRange(new Date(t.createdAt), timeRange));
+  // Trenne Käufe und Einzahlungen für den Nutzer
+  const userPurchases = filteredUserTx
+      .filter((tx) => tx.type === "PURCHASE")
+      .map((tx) => ({ ...tx, amount: -tx.amount }));
+  const userDeposits = filteredUserTx.filter((tx) => tx.type === "DEPOSIT");
 
-  const purchases = userTransactions.filter(t => t.type === 'PURCHASE');
-  const deposits = userTransactions.filter(t => t.type === 'DEPOSIT');
+  // Berechne Nutzerspezifische Statistiken
+  const totalSpent = calculateTotalSpent(userPurchases);
+  const averagePurchaseAmount = userPurchases.length > 0 ? totalSpent / userPurchases.length : 0;
+  const totalDeposited = calculateTotalDeposited(userDeposits);
+  const purchaseCountTotal = userPurchases.length;
+  const purchaseCountByItem = calculatePurchaseCountByItem(userPurchases, buyablesMap);
+  const hourlyStatistics = calculateHourlyStatistics(userPurchases);
+  const dayOfWeekStatistics = calculateDayOfWeekStatistics(userPurchases);
+  const timeline = calculateTimeline(userPurchases, timeRange);
+  const averagePurchaseTime = calculateAveragePurchaseTime(userPurchases);
+  const mostActiveDay = determineMostActiveDay(dayOfWeekStatistics);
 
-  const purchasesByItem = new Map<number, number>();
-  // Calculate most active day
-  const dayCount = new Map<string, number>();
-  purchases.forEach(p => {
-    const day = DAYS_OF_WEEK[new Date(p.createdAt).getDay()];
-    dayCount.set(day, (dayCount.get(day) || 0) + 1);
-    if(p.item) {purchasesByItem.set(p.item, (purchasesByItem.get(p.item) || 0) + 1);}
-  });
-
-  const ByItem: CountByItem[] = Array.from(purchasesByItem.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([itemId, count]) => ({itemId, count}));
-
-  let mostActiveDay = null;
-  let maxCount = 0;
-  dayCount.forEach((count, day) => {
-    if (count > maxCount) {
-      maxCount = count;
-      mostActiveDay = day;
-    }
-  });
-
-  // Calculate average purchase time
-  const purchaseTimes = purchases.map(p => {
-    const date = new Date(p.createdAt);
-    return date.getHours() * 60 + date.getMinutes();
-  });
-
-  let averagePurchaseTime = null;
-  if (purchaseTimes.length > 0) {
-    const avgMinutes = Math.floor(purchaseTimes.reduce((a, b) => a + b, 0) / purchaseTimes.length);
-    const hours = Math.floor(avgMinutes / 60);
-    const minutes = avgMinutes % 60;
-    averagePurchaseTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  }
-
-  return {
-    userId: user.id,
-    username: user.username,
-    totalSpent: Math.abs(purchases.reduce((sum, t) => sum + t.amount, 0)),
-    totalDeposited: deposits.reduce((sum, t) => sum + t.amount, 0),
+  const userStatistics: UserStatistics = {
+    totalSpent,
+    averagePurchaseAmount,
+    totalDeposited,
     balance: user.balance,
-    purchaseCount: purchases.length,
-    purchaseCountByItem: ByItem,
+    purchaseCountTotal,
+    purchaseCountByItem,
+    hourlyStatistics,
+    dayOfWeekStatistics,
+    timeline,
     averagePurchaseTime,
     mostActiveDay,
   };
-}
 
-function calculateTimeStatistics(
-  transactions: Transaction[],
-  timeRange: TimeRange
-): TimeStatistics[] {
-  const dailyStats = new Map<string, TimeStatistics>();
-  
-  const start = new Date(timeRange.start);
-  const end = new Date(timeRange.end);
-  
-  for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
-    dailyStats.set(dateStr, {
-      date: new Date(d),
-      totalPurchases: 0,
-      totalAmount: 0,
-      uniqueUsers: 0,
-    });
-  }
-
-  transactions
-    .filter(t => t.type === 'PURCHASE' && isInTimeRange(new Date(t.createdAt), timeRange))
-    .forEach(t => {
-      const dateStr = new Date(t.createdAt).toISOString().split('T')[0];
-      const stats = dailyStats.get(dateStr);
-      if (stats) {
-        stats.totalPurchases++;
-        stats.totalAmount += Math.abs(t.amount);
-        const uniqueUsers = new Set(transactions
-          .filter(tx => tx.type === 'PURCHASE' && 
-            new Date(tx.createdAt).toISOString().split('T')[0] === dateStr
-          )
-          .map(tx => tx.userId)
-        );
-        stats.uniqueUsers = uniqueUsers.size;
-      }
-    });
-
-  return Array.from(dailyStats.values());
-}
-
-function calculateDayOfWeekStatistics(
-  transactions: Transaction[],
-  timeRange: TimeRange
-): DayOfWeekStatistics[] {
-  const stats = DAYS_OF_WEEK.map(day => ({
-    day,
-    purchases: 0,
-    amount: 0,
-  }));
-
-  transactions
-    .filter(t => t.type === 'PURCHASE' && isInTimeRange(new Date(t.createdAt), timeRange))
-    .forEach(t => {
-      const day = DAYS_OF_WEEK[new Date(t.createdAt).getDay()];
-      const dayStats = stats.find(s => s.day === day)!;
-      dayStats.purchases++;
-      dayStats.amount += Math.abs(t.amount);
-    });
-
-  return stats;
-}
-
-function calculateHourlyStatistics(
-  transactions: Transaction[],
-  timeRange: TimeRange
-): HourlyStatistics[] {
-  const stats = Array.from({ length: 24 }, (_, i) => ({
-    hour: i,
-    purchases: 0,
-    amount: 0,
-  }));
-
-  transactions
-    .filter(t => t.type === 'PURCHASE' && isInTimeRange(new Date(t.createdAt), timeRange))
-    .forEach(t => {
-      const hour = new Date(t.createdAt).getHours();
-      stats[hour].purchases++;
-      stats[hour].amount += Math.abs(t.amount);
-    });
-
-  return stats;
-}
-
-export function calculateStatistics(
-  users: User[],
-  transactions: Transaction[],
-  filters: StatisticsFilters
-): Statistics {
-  const filteredUsers = filters.userIds 
-    ? users.filter(u => filters.userIds!.includes(u.id))
-    : users;
-
-  const userStats = filteredUsers.map(user =>
-    calculateUserStatistics(user, transactions, filters.timeRange)
-  );
-
-  const filteredTransactions = filters.userIds
-    ? transactions.filter(t => filters.userIds!.includes(t.userId))
-    : transactions;
-
-  const purchases = filteredTransactions.filter(t => 
-    t.type === 'PURCHASE' && 
-    isInTimeRange(new Date(t.createdAt), filters.timeRange)
-  );
+  // Systemstatistiken: Alle Kauftransaktionen im System (innerhalb des Zeitbereichs)
+  const systemPurchases = filteredAllTx.filter((tx) => tx.type === "PURCHASE");
+  const systemStatistics = calculateSystemStatistics(systemPurchases);
 
   return {
-    users: userStats,
-    timeline: calculateTimeStatistics(filteredTransactions, filters.timeRange),
-    dayOfWeek: calculateDayOfWeekStatistics(filteredTransactions, filters.timeRange),
-    hourly: calculateHourlyStatistics(filteredTransactions, filters.timeRange),
-    totals: {
-      totalPurchases: purchases.length,
-      totalAmount: Math.abs(purchases.reduce((sum, t) => sum + t.amount, 0)),
-      averagePurchaseAmount: purchases.length ? 
-        Math.abs(purchases.reduce((sum, t) => sum + t.amount, 0)) / purchases.length : 
-        0,
-      uniqueUsers: new Set(purchases.map(t => t.userId)).size,
-    },
+    users: userStatistics,
+    system: systemStatistics,
+  };
+}
+
+/* Hilfsfunktionen */
+
+// Filtert eine Transaktion anhand des Zeitbereichs
+function filterByTimeRange(tx: Transaction, timeRange: { start?: Date; end: Date }): boolean {
+  const createdAt = new Date(tx.createdAt);
+  if (timeRange.start && createdAt < timeRange.start) return false;
+  if (createdAt > timeRange.end) return false;
+  return true;
+}
+
+// Berechnet die Summe der Beträge aller Kauftransaktionen
+function calculateTotalSpent(purchases: Transaction[]): number {
+  return purchases.reduce((sum, tx) => sum + tx.amount, 0);
+}
+
+// Berechnet die Summe der Beträge aller Einzahlungs-Transaktionen
+function calculateTotalDeposited(deposits: Transaction[]): number {
+  return deposits.reduce((sum, tx) => sum + tx.amount, 0);
+}
+
+// Gruppiert die Käufe des Nutzers nach Artikel und zählt diese
+function calculatePurchaseCountByItem(purchases: Transaction[], buyablesMap: BuyablesMap): CountByItem[] {
+  const map = new Map<number, CountByItem>();
+  for (const tx of purchases) {
+    if (tx.item == null) continue;
+    if (map.has(tx.item)) {
+      map.get(tx.item)!.count++;
+    } else {
+      map.set(tx.item, { itemId: tx.item, name: buyablesMap[tx.item].name, count: 1 });
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.count - a.count);
+}
+
+// Berechnet stündliche Statistiken (Käufe und Beträge) über 24 Stunden
+function calculateHourlyStatistics(purchases: Transaction[]): HourlyStatistics[] {
+  const hourlyMap = new Map<number, { purchases: number; amount: number }>();
+  for (let i = 0; i < 24; i++) {
+    hourlyMap.set(i, { purchases: 0, amount: 0 });
+  }
+  purchases.forEach((tx) => {
+    const hour = new Date(tx.createdAt).getHours();
+    const stats = hourlyMap.get(hour)!;
+    stats.purchases++;
+    stats.amount += tx.amount;
+  });
+  return Array.from(hourlyMap.entries()).map(([hour, stats]) => ({
+    hour,
+    purchases: stats.purchases,
+    amount: stats.amount,
+  }));
+}
+
+// Berechnet Statistiken für die einzelnen Wochentage
+function calculateDayOfWeekStatistics(purchases: Transaction[]): DayOfWeekStatistics[] {
+  const dayMap = new Map<string, { purchases: number; amount: number }>();
+  // Initialisiere mit den Tagen aus DAYS_OF_WEEK
+  DAYS_OF_WEEK.forEach((day) => dayMap.set(day, { purchases: 0, amount: 0 }));
+  purchases.forEach((tx) => {
+    const dayAbbr = getDayAbbreviation(new Date(tx.createdAt));
+    if (dayMap.has(dayAbbr)) {
+      const stats = dayMap.get(dayAbbr)!;
+      stats.purchases++;
+      stats.amount += tx.amount;
+    }
+  });
+  return Array.from(dayMap.entries()).map(([day, stats]) => ({
+    day,
+    purchases: stats.purchases,
+    amount: stats.amount,
+  }));
+}
+
+// Wandelt ein Datum in die Wochentagsabkürzung (Mo, Di, …, So) um
+function getDayAbbreviation(date: Date): string {
+  return DAYS_OF_WEEK[date.getDay()];
+}
+
+function calculateTimeline(purchases: Transaction[], timeSpan: TimeRange): TimeStatistics[] {
+  // Erstelle eine Map, um Käufe nach Tag zu gruppieren.
+  const timelineMap = new Map<
+      string,
+      { date: Date; totalPurchases: number; totalAmount: number; uniqueUsers: Set<number> }
+  >();
+
+  // Nur Transaktionen berücksichtigen, die innerhalb des Zeitraums liegen.
+  purchases.forEach((tx) => {
+    const date = new Date(tx.createdAt);
+    // Überspringe Transaktionen, die vor dem Start oder nach dem Enddatum liegen.
+    if (timeSpan.start && date < timeSpan.start) return;
+    if (date > timeSpan.end) return;
+    const key = date.toISOString().split("T")[0];
+    if (!timelineMap.has(key)) {
+      timelineMap.set(key, {
+        date: new Date(key),
+        totalPurchases: 0,
+        totalAmount: 0,
+        uniqueUsers: new Set<number>(),
+      });
+    }
+    const entry = timelineMap.get(key)!;
+    entry.totalPurchases++;
+    entry.totalAmount += tx.amount;
+    entry.uniqueUsers.add(tx.userId);
+  });
+
+  // Bestimme den Start- und Endtag: Falls timeSpan.start nicht definiert ist, nutzen wir timeSpan.end als einzigen Tag.
+  const startDate = timeSpan.start ? new Date(timeSpan.start) : new Date(timeSpan.end);
+  const endDate = new Date(timeSpan.end);
+
+  // Erzeuge für jeden Tag im Zeitraum einen Eintrag (auch wenn keine Käufe vorhanden sind)
+  const result: TimeStatistics[] = [];
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    const key = d.toISOString().split("T")[0];
+    if (timelineMap.has(key)) {
+      const entry = timelineMap.get(key)!;
+      result.push({
+        date: entry.date,
+        totalPurchases: entry.totalPurchases,
+        totalAmount: entry.totalAmount,
+        uniqueUsers: entry.uniqueUsers.size,
+      });
+    } else {
+      result.push({
+        date: new Date(key),
+        totalPurchases: 0,
+        totalAmount: 0,
+        uniqueUsers: 0,
+      });
+    }
+  }
+
+  return result;
+}
+
+// Berechnet die durchschnittliche Kaufzeit (HH:mm) über alle Käufe
+function calculateAveragePurchaseTime(purchases: Transaction[]): string | null {
+  if (purchases.length === 0) return null;
+  const totalMinutes = purchases.reduce((sum, tx) => {
+    const date = new Date(tx.createdAt);
+    return sum + date.getHours() * 60 + date.getMinutes();
+  }, 0);
+  const avgMinutes = Math.floor(totalMinutes / purchases.length);
+  const hours = Math.floor(avgMinutes / 60);
+  const minutes = avgMinutes % 60;
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}`;
+}
+
+// Bestimmt den aktivsten Wochentag anhand der Kaufanzahl und übersetzt ihn in eine menschenlesbare Form
+function determineMostActiveDay(dayStats: DayOfWeekStatistics[]): string | null {
+  let mostActive: DayOfWeekStatistics | null = null;
+  for (const stat of dayStats) {
+    if (!mostActive || stat.purchases > mostActive.purchases) {
+      mostActive = stat;
+    }
+  }
+  return mostActive ? DaysOfWeekMapToHumanReadable[mostActive.day] || mostActive.day : null;
+}
+
+// Berechnet die Systemstatistiken aus allen Kauftransaktionen
+function calculateSystemStatistics(purchases: Transaction[]): SystemStatistics {
+  const totalPurchases = purchases.length;
+  const totalAmount = -purchases.reduce((sum, tx) => sum + tx.amount, 0);
+  const averagePurchaseAmount =
+      totalPurchases > 0 ? totalAmount / totalPurchases : 0;
+  const uniqueActiveUsers = new Set(purchases.map((tx) => tx.userId)).size;
+  return {
+    totalPurchases,
+    totalAmount,
+    averagePurchaseAmount,
+    uniqueActiveUsers,
   };
 }

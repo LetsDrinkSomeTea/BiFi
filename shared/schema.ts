@@ -59,6 +59,17 @@ export const categoryMap = categories.reduce((map, category) => {
   return map;
 }, {} as Record<string, string>);
 
+export const DAYS_OF_WEEK = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+export const DaysOfWeekMapToHumanReadable: Record<string, string> = {
+  'Mo': 'Montag',
+  'Di': 'Dienstag',
+  'Mi': 'Mittwoch',
+  'Do': 'Donnerstag',
+  'Fr': 'Freitag',
+  'Sa': 'Samstag',
+  'So': 'Sonntag',
+};
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
