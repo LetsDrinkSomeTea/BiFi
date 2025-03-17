@@ -670,6 +670,31 @@ defineAchievement({
     }
   }),
 
-
-
+  defineAchievement({
+    id: "gambling",
+    name: "Die Sonne lacht",
+    description: "Spiele um eine Produkt anstatt es zu kaufen",
+    check: ({currentTransaction, buyablesMap}) => {
+      if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
+      return currentTransaction.amount != buyablesMap[currentTransaction.item!].price;
+    }
+  }),
+  defineAchievement({
+      id: "glueckspilz",
+      name: "Glückspilz",
+      description: "Gewinne ein Produkt umsonst",
+      check: ({currentTransaction, buyablesMap}) => {
+        if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
+        return currentTransaction.amount == 0 && buyablesMap[currentTransaction.item!].price > 0;
+      }
+  }),
+  defineAchievement({
+    id: "pechvogel",
+    name: "Pechvogel",
+    description: "Zahle das doppelte für ein Produkt",
+    check: ({currentTransaction, buyablesMap}) => {
+      if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
+      return currentTransaction.amount == -(buyablesMap[currentTransaction.item!].price * 2);
+    }
+  }),
 ];

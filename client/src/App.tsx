@@ -10,6 +10,7 @@ import AdminPage from "@/pages/admin-page";
 import StatisticsPage from "@/pages/statistics-page";
 import InventoryPage from "@/pages/inventory-page"
 import NotFound from "@/pages/not-found";
+import JackpotPage from "@/pages/jackpot-page.tsx";
 
 function Router() {
   return (
@@ -18,6 +19,7 @@ function Router() {
       <ProtectedRoute path="/admin" component={AdminPage} />
       <ProtectedRoute path="/stats" component={StatisticsPage} />
       <ProtectedRoute path={"/inventory"} component={InventoryPage} />
+      <ProtectedRoute path={"/jackpot"} component={JackpotPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

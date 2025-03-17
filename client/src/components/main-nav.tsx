@@ -2,7 +2,7 @@ import {Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger} from "@
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import {Menu, Beer, LogOut, BarChart, Users, Warehouse, LucideProps} from "lucide-react";
+import {Menu, Beer, LogOut, BarChart, Users, Warehouse, LucideProps, Gem} from "lucide-react";
 import React, { useState } from "react";
 import { PasswordChangeDialog } from "@/components/password-change-dialog";
 
@@ -24,6 +24,7 @@ export function MainNav({currentPath}: MainNavProps) {
 
   const navigation: MainNavItem[] = [
     { name: "Dashboard", href: "/", icon: Beer, show: true },
+    { name: "Jackpot", href: "/jackpot", icon: Gem, show: true},
     { name: "Statistiken", href: "/stats", icon: BarChart, show: true },
     { name: "Inventar", href: "/inventory", icon: Warehouse, show: user?.isAdmin },
     { name: "Benutzer", href: "/admin", icon: Users, show: user?.isAdmin }

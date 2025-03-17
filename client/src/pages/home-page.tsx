@@ -5,12 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BuyButton } from "@/components/ui/buy-button.tsx";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Beer, GlassWater, History, Trophy, Wine } from "lucide-react";
-import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { Beer, GlassWater, Wine } from "lucide-react";
 import { MainNav } from "@/components/main-nav";
-import { AchievementBadge } from "@/components/ui/achievement-badge.tsx";
 import React from "react";
+import {TransactionsCard} from "@/components/transactions-card.tsx";
+import {AchievementsCard} from "@/components/achievement-card.tsx";
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -27,7 +26,6 @@ export default function HomePage() {
   const { data: buyablesMap, isLoading: isLoadingBuyablesMap } = useQuery<BuyablesMap>({
     queryKey: ["/api/buyables/map"],
   });
-
 
   // Filter für Buyables mit id 4 ... n
   const otherBuyables = React.useMemo(() => {
@@ -56,10 +54,7 @@ export default function HomePage() {
     },
   });
 
-  const [activeTooltipId, setActiveTooltipId] = React.useState<string | null>(null);
-  const achievements = user ? JSON.parse(user.achievements) : [];
-
-  if (isLoadingBuyables || isLoadingBuyablesMap || !buyables || !buyablesMap) {
+  if (isLoadingBuyables || isLoadingBuyablesMap || !buyables || !buyablesMap || !transactions) {
     return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="animate-pulse">Dashboard wird geladen...</div>
@@ -134,60 +129,8 @@ export default function HomePage() {
                 )}
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Errungenschaften</CardTitle>
-                <Trophy className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {achievements.map((achievement: any) => (
-                      <AchievementBadge
-                          achievement={achievement}
-                          activeTooltipId={activeTooltipId}
-                          setActiveTooltipId={setActiveTooltipId}
-                          key={achievement.id}
-                      />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="md:col-span-2 lg:col-span-1">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Letzte Transaktionen</CardTitle>
-                <History className="h-5 w-5 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {transactions?.slice(0, 5).map((transaction) => {
-                    // Wir gehen davon aus, dass transaction.item die buyableId enthält
-                    const buyableName =
-                        buyablesMap![transaction.item as number]?.name || transaction.item;
-                    return (
-                        <div key={transaction.id} className="flex justify-between">
-                          <div className="text-sm text-muted-foreground w-32">
-                            {format(new Date(transaction.createdAt), "d. MMM, HH:mm", {
-                              locale: de,
-                            })}
-                          </div>
-                          <div className="text-sm text-foreground flex-1">{buyableName}</div>
-                          <div
-                              className={
-                                transaction.amount < 0
-                                    ? "text-destructive"
-                                    : "text-primary"
-                              }
-                          >
-                            €{transaction.amount.toFixed(2)}
-                          </div>
-                        </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+            <AchievementsCard user={user}/>
+            <TransactionsCard transactions={transactions} buyablesMap={buyablesMap}/>
           </div>
         </main>
       </div>
