@@ -37,7 +37,7 @@ async function purchase(userId: number, buyableId: number, multiplier: number) :
   });
 
   // Update balance
-  const user = await storage.updateUserBalance(userId, -buyable!.price);
+  const user = await storage.updateUserBalance(userId, transaction.amount);
   await storage.updateBuyableStock(buyableId, -1);
 
   // Check and update achievements
