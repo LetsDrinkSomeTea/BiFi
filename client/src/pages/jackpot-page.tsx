@@ -11,7 +11,7 @@ import { AchievementsCard } from "@/components/achievement-card.tsx";
 import { Dialog } from "@radix-ui/react-dialog";
 import { DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import {Gem, History, Trophy} from "lucide-react";
+import {Gem} from "lucide-react";
 
 export default function JackpotPage() {
     const { user } = useAuth();
@@ -88,7 +88,7 @@ export default function JackpotPage() {
                 <MainNav currentPath={window.location.pathname} />
             </header>
             <main className="container mx-auto px-4 py-8 space-y-8">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
                     {/* Jackpot-Bereich */}
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
@@ -118,7 +118,25 @@ export default function JackpotPage() {
                             </div>
                         </CardContent>
                     </Card>
-                    <TransactionsCard transactions={transactions} buyablesMap={buyablesMap} />
+                    <div className="grid gap-4 grid-rows-3">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Kontostand</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p
+                                    className={`text-3xl font-bold ${
+                                        user?.balance! < 0 ? "text-destructive" : "text-primary"
+                                    }`}
+                                >
+                                    €{user?.balance?.toFixed(2)}
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <div className="row-span-2 grid gap-4">
+                        <TransactionsCard transactions={transactions} buyablesMap={buyablesMap} />
+                        </div>
+                    </div>
                     <AchievementsCard user={user} />
                 </div>
                 <Dialog open={resultDialogOpen} onOpenChange={setResultDialogOpen}>
@@ -130,7 +148,7 @@ export default function JackpotPage() {
                             {resultMultiplier !== null && (
                                 <p className="text-lg font-medium">
                                     Du hast <strong>{selectedBuyable.name}</strong> zum Preis von{" "}
-                                    {(selectedBuyable.price * resultMultiplier).toFixed(2)}€ gekauft! ({(resultMultiplier * 100).toFixed(0)}%)
+                                    {(selectedBuyable.price * resultMultiplier).toFixed(2)}€ erspielt! ({(resultMultiplier * 100).toFixed(0)}%)
                                 </p>
                             )}
                         </div>

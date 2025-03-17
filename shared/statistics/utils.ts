@@ -188,12 +188,13 @@ function calculateTimeline(
     string,
     { date: Date; totalPurchases: number; totalAmount: number; uniqueUsers: Set<number> }
   >();
-
+  let firstDate: Date = new Date(timeSpan.end);
   // Nur Transaktionen berücksichtigen, die innerhalb des Zeitraums liegen.
   purchases.forEach((tx) => {
     // Konvertiere die Transaktionszeit in Berliner Zeit
     const berlinDate = toZonedTime(new Date(tx.createdAt), "Europe/Berlin");
     // Überspringe Transaktionen, die vor dem Start oder nach dem Enddatum liegen.
+    if (berlinDate < firstDate) firstDate = berlinDate;
     if (timeSpan.start && berlinDate < timeSpan.start) return;
     if (berlinDate > timeSpan.end) return;
     const key = berlinDate.toISOString().split("T")[0];
@@ -212,7 +213,7 @@ function calculateTimeline(
   });
 
   // Bestimme den Start- und Endtag: Falls timeSpan.start nicht definiert ist, nutzen wir timeSpan.end als einzigen Tag.
-  const startDate = timeSpan.start ? toZonedTime(new Date(timeSpan.start), "Europe/Berlin") : toZonedTime(new Date(timeSpan.end), "Europe/Berlin");
+  const startDate = timeSpan.start ? toZonedTime(new Date(timeSpan.start), "Europe/Berlin") : firstDate.setDate(firstDate.getDate() - 1);
   const endDate = toZonedTime(new Date(timeSpan.end), "Europe/Berlin");
 
   // Erzeuge für jeden Tag im Zeitraum einen Eintrag (auch wenn keine Käufe vorhanden sind)
