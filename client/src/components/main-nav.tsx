@@ -1,8 +1,18 @@
-import {Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import {Menu, Beer, LogOut, BarChart, Users, Warehouse, LucideProps, Gem} from "lucide-react";
+import {
+  Menu,
+  Beer,
+  LogOut,
+  BarChart,
+  Users,
+  Warehouse,
+  LucideProps,
+  Gem,
+  ReceiptText
+} from 'lucide-react'
 import React, { useState } from "react";
 import { PasswordChangeDialog } from "@/components/password-change-dialog";
 
@@ -26,9 +36,13 @@ export function MainNav({currentPath}: MainNavProps) {
     { name: "Dashboard", href: "/", icon: Beer, show: true },
     { name: "Jackpot", href: "/jackpot", icon: Gem, show: true},
     { name: "Statistiken", href: "/stats", icon: BarChart, show: true },
-    { name: "Inventar", href: "/inventory", icon: Warehouse, show: user?.isAdmin },
-    { name: "Benutzer", href: "/admin", icon: Users, show: user?.isAdmin }
+    { name: "Transaktionen", href: "/transactions", icon: ReceiptText, show: true },
   ];
+
+  const adminNavigation: MainNavItem[] = [
+    { name: "Inventar", href: "/inventory", icon: Warehouse, show: user?.isAdmin },
+    { name: "Benutzer", href: "/admin", icon: Users, show: user?.isAdmin },
+  ]
 
   return (
       <>
@@ -50,16 +64,28 @@ export function MainNav({currentPath}: MainNavProps) {
               <SheetTitle className="text-lg">Navigation</SheetTitle>
               <SheetDescription className="text-sm"></SheetDescription>
               <div className="flex flex-col gap-4 py-4">
-                {navigation.filter(item => item.href != currentPath).map(item =>
+                {navigation.map(item =>
                         item.show && (
                             <Link key={item.href} href={item.href}>
-                              <Button variant="ghost" className="w-full justify-start hover:text-muted-foreground">
+                              <Button variant={item.href == currentPath? "secondary" : "ghost"} className="w-full justify-start hover:text-muted-foreground">
                                 <item.icon className="h-4 w-4 mr-2"/>
                                 {item.name}
                               </Button>
                             </Link>
                         )
                 )}
+                {user?.isAdmin && (<SheetDescription className="text-muted-foreground">Admin</SheetDescription>)}
+                {adminNavigation.map(item =>
+                        item.show && (
+                            <Link key={item.href} href={item.href}>
+                              <Button variant={item.href == currentPath? "secondary" : "ghost"} className="w-full justify-start hover:text-muted-foreground">
+                                <item.icon className="h-4 w-4 mr-2"/>
+                                {item.name}
+                              </Button>
+                            </Link>
+                        )
+                )}
+                {<SheetDescription className="text-muted-foreground">Account</SheetDescription>}
                 <PasswordChangeDialog
                     isDialogOpen={isDialogOpen}
                     setIsDialogOpen={setIsDialogOpen}

@@ -31,11 +31,8 @@ export default function StatisticsPage() {
 
   // Setze Standardwerte: Standardmäßig geht der Zeitraum von vor 7 Tagen bis heute.
   const today = new Date().toISOString().split("T")[0];
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
 
-  const [startDate, setStartDate] = useState(sevenDaysAgo);
+  const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState(today);
 
   // State zur Auswahl der Metrik für die Diagramme:
