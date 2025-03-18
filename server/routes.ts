@@ -98,6 +98,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+    app.get("/api/transactions/:id", async (req, res) => {
+    try {
+      requireAuth(req);
+      if (parseInt(req.params.id) !== req.user!.id && !req.user!.isAdmin) {
+        throw new Error("Forbidden");
+      }
+      const transactions = await storage.getTransactions(parseInt(req.params.id));
+      res.json(transactions);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
   app.get("/api/users", async (req, res) => {
     try {
       requireAdmin(req);
@@ -237,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       requireAuth(req);
       // Users can only access their own statistics
-      if (parseInt(req.params.userId) !== req.user!.id) {
+      if (parseInt(req.params.userId) !== req.user!.id && !req.user!.isAdmin) {
         throw new Error("Forbidden");
       }
 
@@ -248,7 +261,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       end.setHours(23, 59, 59, 999);
 
       const stats = await calculateStatistics({
-          userId: req.user!.id,
+          userId: parseInt(req.params.userId),
           timeRange: {start, end}
       });
 

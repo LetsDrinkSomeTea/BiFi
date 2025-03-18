@@ -85,7 +85,7 @@ export function MainNav({currentPath}: MainNavProps) {
                             </Link>
                         )
                 )}
-                {<SheetDescription className="text-muted-foreground">Account</SheetDescription>}
+                {<SheetDescription className="text-muted-foreground">Account (<strong>{user?.username}</strong>)</SheetDescription>}
                 <PasswordChangeDialog
                     isDialogOpen={isDialogOpen}
                     setIsDialogOpen={setIsDialogOpen}

@@ -6,6 +6,8 @@ const toBerlinTime = (dateInput: string | Date): Date => {
   return toZonedTime(new Date(dateInput), 'Europe/Berlin');
 };
 
+const EPSILON = 1e-6; // oder ein anderer, passender Toleranzwert
+
 export const achievements = [
   // Getränke-Käufe
   defineAchievement({
@@ -676,7 +678,7 @@ defineAchievement({
     description: "Spiele um eine Produkt anstatt es zu kaufen",
     check: ({currentTransaction, buyablesMap}) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
-      return currentTransaction.amount != buyablesMap[currentTransaction.item!].price;
+      return Math.abs(currentTransaction.amount + buyablesMap[currentTransaction.item!].price) > EPSILON;
     }
   }),
   defineAchievement({
@@ -685,7 +687,7 @@ defineAchievement({
       description: "Gewinne ein Produkt umsonst",
       check: ({currentTransaction, buyablesMap}) => {
         if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
-        return currentTransaction.amount == 0 && buyablesMap[currentTransaction.item!].price > 0;
+        return Math.abs(currentTransaction.amount) < EPSILON && buyablesMap[currentTransaction.item!].price > 0;
       }
   }),
   defineAchievement({
@@ -694,7 +696,7 @@ defineAchievement({
     description: "Zahle das doppelte für ein Produkt",
     check: ({currentTransaction, buyablesMap}) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
-      return currentTransaction.amount == -(buyablesMap[currentTransaction.item!].price * 2);
+      return Math.abs(currentTransaction.amount + (buyablesMap[currentTransaction.item!].price * 2)) < EPSILON;
     }
   }),
 ];

@@ -25,10 +25,25 @@ import React, { useState } from "react";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
 import { MainNav } from "@/components/main-nav";
+import { User } from '@shared/schema.ts'
 
 export default function StatisticsPage() {
   const { user } = useAuth();
+  if (!user) {
+    return <div>Keine Berechtigung</div>;
+  }
 
+  const [selectedUser, setSelectedUser] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    if (!selectedUser) {
+      setSelectedUser(user.id);
+    }
+  }, [selectedUser, user.id]);
+
+  const { data: users } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+    enabled: user.isAdmin,
+  });
   // Setze Standardwerte: Standardmäßig geht der Zeitraum von vor 7 Tagen bis heute.
   const today = new Date().toISOString().split("T")[0];
 
@@ -45,14 +60,14 @@ export default function StatisticsPage() {
 
   // Query-Key beinhaltet nun auch from und to als Parameter
   const { data: statistics, isLoading } = useQuery<Statistics>({
-    queryKey: [`/api/stats/${user?.id}`, { from: startDate, to: endDate }],
+    queryKey: [`/api/stats/${selectedUser}`, { from: startDate, to: endDate }],
     queryFn: async ({ queryKey }) => {
       const [base, { from, to }] = queryKey as [string, { from: string; to: string }];
       const res = await fetch(`${base}?from=${from}&to=${to}`);
       if (!res.ok) throw new Error("Fehler beim Laden der Statistiken");
       return res.json();
     },
-    enabled: !!user?.id,
+    enabled: !!selectedUser,
   });
 
   if (isLoading || !statistics) {
@@ -77,6 +92,22 @@ export default function StatisticsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Statistiken</CardTitle>
+              {user.isAdmin && (
+                <div className="flex flex-row gap-2 items-center p-2">
+                <label className="text-muted-foreground">von</label>
+                <select
+                  value={selectedUser || ""}
+                  onChange={(e) => setSelectedUser(Number(e.target.value))}
+                  className="p-2 border rounded w-full"
+                >
+                  {users?.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {user.id == u.id ? `Ich (${u.username})` : u.username}
+                    </option>
+                  ))}
+                </select>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="flex flex-col md:flex-row items-center gap-4">
               <div className="flex flex-col">
