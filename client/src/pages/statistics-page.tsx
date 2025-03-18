@@ -342,7 +342,7 @@ export default function StatisticsPage() {
                   <CardContent>
                     <div className="text-2xl font-bold">{systemStats.totalAmount.toFixed(2)}€</div>
                     <p className="text-xs text-muted-foreground">
-                      Ø €{systemStats.averagePurchaseAmount.toFixed(2)} pro Einkauf
+                      Ø {systemStats.averagePurchaseAmount.toFixed(2)}€ pro Einkauf
                     </p>
                   </CardContent>
                 </Card>

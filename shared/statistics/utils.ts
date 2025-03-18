@@ -174,8 +174,7 @@ function calculateDayOfWeekStatistics(purchases: Transaction[]): DayOfWeekStatis
 
 // Wandelt ein Datum in die Wochentagsabkürzung (Mo, Di, …, So) um in Berliner Zeit
 function getDayAbbreviation(date: Date): string {
-  const berlinDate = toZonedTime(date, "Europe/Berlin");
-  return DAYS_OF_WEEK[berlinDate.getDay()];
+  return DAYS_OF_WEEK[date.getDay()];
 }
 
 // Berechnet die Tages-Timeline in Berliner Zeit: Für jeden Tag im Zeitraum (auch ohne Käufe)
