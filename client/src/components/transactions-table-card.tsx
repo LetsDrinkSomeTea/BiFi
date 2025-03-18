@@ -1,4 +1,4 @@
-import { LucideProps } from 'lucide-react'
+import { CircleMinus, CirclePlus } from 'lucide-react'
 import {BuyablesMap, Transaction} from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card.tsx";
 import { Table, TableCell, TableHead, TableRow } from '@/components/ui/table.tsx'
@@ -7,8 +7,7 @@ import React, { useState } from 'react'
 export interface TransactionsCardProps {
     transactions: Transaction[];
     buyablesMap: BuyablesMap;
-    tableHeader: string;
-    icon: React.ForwardRefExoticComponent<Omit<LucideProps, "ref"> & React.RefAttributes<SVGSVGElement>>;
+    variant: "purchases" | "deposits";
 }
 
 export function TransactionsTableCard(args: TransactionsCardProps) {
@@ -48,18 +47,19 @@ export function TransactionsTableCard(args: TransactionsCardProps) {
       setSortDirection("asc");
     }
   };
+  const icon = {icon: args.variant === "purchases" ? CircleMinus : CirclePlus};
     return (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>{args.tableHeader}</CardTitle>
-            <args.icon className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>{args.variant == "purchases" ? "Einkäufe" : "Einzahlungen"}</CardTitle>
+            <icon.icon className={args.variant == "purchases" ? "h-5 w-5 text-destructive" : "h-5 w-5 text-primary"}/>
           </CardHeader>
           <CardContent>
             <Table>
               <TableRow>
-                <TableHead onClick={() => handleSort("Produkt")} className="cursor-pointer w-1/3">
+                {args.variant == "purchases" && <TableHead onClick={() => handleSort("Produkt")} className="cursor-pointer w-1/3">
                   Produkt {sortColumn === "Produkt" && (sortDirection === "asc" ? "▲" : "▼")}
-                </TableHead>
+                </TableHead>}
                 <TableHead onClick={() => handleSort("Betrag")} className="cursor-pointer w-1/3">
                   Betrag {sortColumn === "Betrag" && (sortDirection === "asc" ? "▲" : "▼")}
                 </TableHead>
@@ -75,7 +75,7 @@ export function TransactionsTableCard(args: TransactionsCardProps) {
                   "Einzahlung";
                 return (
                   <TableRow key={transaction.id}>
-                    <TableCell>{buyableName}</TableCell>
+                    {args.variant == "purchases" && <TableCell>{buyableName}</TableCell>}
                     <TableCell className={transaction.amount < 0 ? "text-destructive" : "text-primary"}>
                       {transaction.amount.toFixed(2)}€
                     </TableCell>

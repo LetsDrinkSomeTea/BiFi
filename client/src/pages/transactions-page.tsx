@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { BuyablesMap, Transaction } from "@shared/schema";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { CircleMinus, CirclePlus, ReceiptText } from 'lucide-react';
+import { ReceiptText } from 'lucide-react';
 import { MainNav } from "@/components/main-nav";
 import { TransactionsTableCard } from '@/components/transactions-table-card.tsx'
 
@@ -49,8 +49,8 @@ export default function TransactionsPage() {
         </Card>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-          <TransactionsTableCard icon={CircleMinus} transactions={purchases} buyablesMap={buyablesMap} tableHeader={"Einkäufe"}/>
-          <TransactionsTableCard icon={CirclePlus} transactions={deposits} buyablesMap={buyablesMap} tableHeader={"Einzahlungen"}/>
+          <TransactionsTableCard transactions={purchases} buyablesMap={buyablesMap} variant="purchases"/>
+          <TransactionsTableCard transactions={deposits} buyablesMap={buyablesMap} variant="deposits"/>
         </div>
 
       </main>
