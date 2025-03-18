@@ -25,7 +25,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Installiere nur die Produktionsabhängigkeiten
-RUN npm install
+RUN npm install --production
 
 # Kopiere den Build aus der Builder-Stage
 COPY --from=builder /app/dist ./dist

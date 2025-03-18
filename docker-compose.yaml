@@ -12,11 +12,18 @@ services:
     #ports:           # Only for local debugging
     #  - "5432:5432"
 
+  session-db:
+    image: redis:7.4.2
+    restart: unless-stopped
+    #ports:           # Only for local debugging
+    #  - "6379:6379"
+
   app:
     build: .
     restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/bifi
+      - REDIS_URL=redis://session-db:6379
     depends_on:
       - db
     ports:

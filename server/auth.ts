@@ -2,6 +2,8 @@ import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { Express } from "express";
 import session from "express-session";
+import { RedisStore } from "connect-redis";
+import { Redis } from "ioredis";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
@@ -29,10 +31,21 @@ export async function comparePasswords(supplied: string, stored: string) {
 }
 
 export function setupAuth(app: Express) {
+  // Verwende in der Produktion einen Redis-basierten Session-Store
+  let sessionStore: session.Store | undefined = undefined;
+  if (process.env.NODE_ENV === "production") {
+    // Verwende hier deine Redis-Konfiguration (z.B. URL oder host, port etc.)
+    const redisClient = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
+    sessionStore = new RedisStore({ client: redisClient });
+  }
+
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "development_secret",
     resave: false,
     saveUninitialized: false,
+    // Falls kein Session-Store definiert ist (z.B. in der Entwicklung),
+    // wird der Standard MemoryStore verwendet.
+    store: sessionStore,
   };
 
   app.set("trust proxy", 1);
@@ -51,7 +64,7 @@ export function setupAuth(app: Express) {
       } catch (err) {
         return done(err);
       }
-    }),
+    })
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
