@@ -12,6 +12,7 @@ import InventoryPage from "@/pages/inventory-page"
 import NotFound from "@/pages/not-found";
 import JackpotPage from "@/pages/jackpot-page.tsx";
 import TransactionsPage from '@/pages/transactions-page.tsx'
+import LogPage from '@/pages/log-page.tsx'
 
 function Router() {
   return (
@@ -21,7 +22,8 @@ function Router() {
       <ProtectedRoute path="/stats" component={StatisticsPage} />
       <ProtectedRoute path="/transactions" component={TransactionsPage} />
       <ProtectedRoute path="/admin" component={AdminPage} />
-      <ProtectedRoute path={"/inventory"} component={InventoryPage} />
+      <ProtectedRoute path="/log" component={LogPage} />
+      <ProtectedRoute path="/inventory" component={InventoryPage} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

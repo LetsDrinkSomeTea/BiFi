@@ -76,6 +76,11 @@ export const insertUserSchema = createInsertSchema(users).pick({
   isAdmin: true,
 });
 
+export type LogInfo = {
+  transaction: Transaction,
+  user: User,
+}[];
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;

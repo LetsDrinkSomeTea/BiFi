@@ -53,6 +53,14 @@ export class DrizzleStorage implements IStorage {
     return result[0] as User | undefined;
   }
 
+  async getUserMap(): Promise<Record<number, User>> {
+    const users = await this.getAllUsers();
+    return users.reduce((map, user) => {
+      map[user.id] = user;
+      return map;
+    }, {} as Record<string, User>);
+  }
+
   async getUserByUsername(username: string): Promise<User | undefined> {
     const result = await this.db
         .select()

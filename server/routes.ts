@@ -4,7 +4,7 @@ import {comparePasswords, hashPassword, setupAuth} from "./auth";
 import {storage} from "./storage";
 import {Achievement, achievements, checkForNewAchievements} from "@shared/achievements";
 import {calculateStatistics} from "@shared/statistics/utils";
-import {Buyable, Transaction, User} from "@shared/schema.ts";
+import { Buyable, LogInfo, Transaction, User } from '@shared/schema.ts'
 function requireAuth(req: Request) {
   if (!req.isAuthenticated()) {
     throw new Error("Unauthorized");
@@ -93,6 +93,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       requireAuth(req);
       const transactions = await storage.getTransactions(req.user!.id);
       res.json(transactions);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/admin/log", async (req, res) => {
+    try {
+      requireAdmin(req);
+      const transactions = await storage.getAllTransactions();
+      const usersMap = await storage.getUserMap();
+
+      // Add user info to transactions
+      const logInfo: LogInfo = transactions.map(t => {
+        const user = usersMap[t.userId];
+        return {transaction: t, user};
+      });
+
+
+      res.json(logInfo);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
     }

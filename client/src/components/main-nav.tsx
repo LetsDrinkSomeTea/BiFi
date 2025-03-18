@@ -11,7 +11,7 @@ import {
   Warehouse,
   LucideProps,
   Gem,
-  ReceiptText
+  ReceiptText, ScrollText
 } from 'lucide-react'
 import React, { useState } from "react";
 import { PasswordChangeDialog } from "@/components/password-change-dialog";
@@ -42,6 +42,7 @@ export function MainNav({currentPath}: MainNavProps) {
   const adminNavigation: MainNavItem[] = [
     { name: "Inventar", href: "/inventory", icon: Warehouse, show: user?.isAdmin },
     { name: "Benutzer", href: "/admin", icon: Users, show: user?.isAdmin },
+    { name: "Log", href: "/log", icon: ScrollText, show: user?.isAdmin },
   ]
 
   return (
