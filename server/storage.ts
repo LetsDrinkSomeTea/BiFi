@@ -1,12 +1,12 @@
 import 'dotenv/config';
 import db from './db';
-import {desc, eq, sql} from 'drizzle-orm';
+import {count, desc, eq, sql} from 'drizzle-orm';
 
 // Import your table definitions from your DB schema
 import {
   type Buyable,
   buyables,
-  categoryIds,
+  categoryIds, Group, GroupMember, groupMembers, groups,
   type InsertUser,
   type Transaction,
   transactions,
@@ -14,6 +14,7 @@ import {
   users
 } from '@shared/schema';
 import {type Achievement} from '@shared/achievements';
+import {and} from "drizzle-orm/sql/expressions/conditions";
 
 // Define the storage interface (same as before)
 export interface IStorage {
@@ -138,13 +139,16 @@ export class DrizzleStorage implements IStorage {
   async createTransaction(
       transaction: Omit<Transaction, "id" | "createdAt">
   ): Promise<Transaction> {
+    const amount = parseFloat((transaction.amount).toFixed(2));
     const [newTransaction] = await this.db
         .insert(transactions)
         .values({
           userId: transaction.userId,
-          amount: transaction.amount,
+          amount,
           item: transaction.item || null,
           type: transaction.type,
+          groupId: transaction.groupId || null,
+          isJackpot: transaction.isJackpot || false,
           createdAt: new Date(),
         })
         .returning();
@@ -231,6 +235,145 @@ export class DrizzleStorage implements IStorage {
     const updatedBuyable = await this.getBuyable(id);
     if (!updatedBuyable) throw new Error("Buyable not found");
     return updatedBuyable;
+  }
+
+  //------Groups------
+  // Erstelle eine Gruppe
+  async createGroup(name: string, userId: number): Promise<Group> {
+    const [group] = await this.db
+        .insert(groups)
+        .values({ name })
+        .returning();
+    await this.db
+        .insert(groupMembers)
+        .values({ groupId: group.id, userId, status: "accepted" })
+    return group as Group;
+  }
+
+  async getGroupMembers(groupId: number): Promise<User[]> {
+    const results = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          password: users.password,
+          balance: users.balance,
+          isAdmin: users.isAdmin,
+          achievements: users.achievements,
+        })
+        .from(groupMembers)
+        .innerJoin(users, eq(groupMembers.userId, users.id))
+        .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.status, "accepted")));
+    return results as User[];
+  }
+
+  async getGroupMembersAndInvitations(groupId: number): Promise<User[]> {
+    const results = await this.db
+        .select({
+          id: users.id,
+          username: users.username,
+          password: users.password,
+          balance: users.balance,
+          isAdmin: users.isAdmin,
+          achievements: users.achievements,
+        })
+        .from(groupMembers)
+        .innerJoin(users, eq(groupMembers.userId, users.id))
+        .where(eq(groupMembers.groupId, groupId));
+    return results as User[];
+  }
+
+// Hole eine Gruppe anhand der Gruppen-ID
+  async getGroup(groupId: number): Promise<Group[]> {
+    const results = await this.db
+        .select()
+        .from(groups)
+        .where(eq(groups.id, groupId));
+    return results as Group[];
+  }
+
+// Hole alle Gruppen, in denen der Nutzer als Mitglied (Status "accepted") ist
+  async getGroups(userId: number): Promise<Group[]> {
+    const results = await this.db
+        .select({
+          id: groups.id,
+          name: groups.name,
+        })
+        .from(groupMembers)
+        .innerJoin(groups, eq(groupMembers.groupId, groups.id))
+        .where(and(eq(groupMembers.userId, userId), eq(groupMembers.status, "accepted")));
+    return results as Group[];
+  }
+
+  async isUserInGroup(userId: number, groupId: number): Promise<boolean> {
+    const result = await this.db
+        .select()
+        .from(groupMembers)
+        .where(
+            and(
+                and(
+                    eq(groupMembers.groupId, groupId),
+                    eq(groupMembers.userId, userId)),
+                eq(groupMembers.status, "accepted")
+            )
+        );
+    return result && result.length > 0;
+  }
+
+// Lade ein Mitglied in eine Gruppe ein (Einladung senden)
+  async inviteUserToGroup(groupId: number, userId: number): Promise<GroupMember> {
+    const [groupMember] = await this.db
+        .insert(groupMembers)
+        .values({ groupId, userId, status: "invited" })
+        .returning();
+    return groupMember as GroupMember;
+  }
+
+  // Hole alle Gruppen, in denen der Nutzer eine Einladung erhalten hat (Status "invited")
+  async getInvitations(userId: number): Promise<Group[]> {
+    const results = await this.db
+        .select({
+          id: groups.id,
+          name: groups.name,
+        })
+        .from(groupMembers)
+        .innerJoin(groups, eq(groupMembers.groupId, groups.id))
+        .where(and(eq(groupMembers.userId, userId), eq(groupMembers.status, "invited")))
+    return results as Group[];
+  }
+
+
+// Einladung beantworten (annehmen oder ablehnen)
+  async respondToInvitation(groupId: number, userId: number, response: "accepted" | "rejected"): Promise<GroupMember> {
+    await this.db
+        .update(groupMembers)
+        .set({ status: response })
+        .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+    // Rückgabe des aktualisierten Eintrags (optional)
+    const [groupMember] = await this.db
+        .select()
+        .from(groupMembers)
+        .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+    return groupMember as GroupMember;
+  }
+
+// Gruppe verlassen (Eintrag löschen)
+  async leaveGroup(groupId: number, userId: number): Promise<void> {
+    await this.db
+        .delete(groupMembers)
+        .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.userId, userId)))
+
+    // Überprüfen, ob die Gruppe noch Mitglieder hat und lösche sie, falls sie leer ist
+    const remainingMembersCount = await this.db
+        .select({count: count()})
+        .from(groupMembers)
+        .where(eq(groupMembers.groupId, groupId))
+        .then(([result]) => Number(result.count));
+
+    if (remainingMembersCount === 0) {
+      await this.db
+          .delete(groups)
+          .where(eq(groups.id, groupId));
+    }
   }
 }
 

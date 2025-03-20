@@ -34,6 +34,7 @@ export function MainNav({currentPath}: MainNavProps) {
 
   const navigation: MainNavItem[] = [
     { name: "Dashboard", href: "/", icon: Beer, show: true },
+    { name: "Gruppen", href: "/groups", icon: Users, show: true },
     { name: "Jackpot", href: "/jackpot", icon: Gem, show: true},
     { name: "Statistiken", href: "/stats", icon: BarChart, show: true },
     { name: "Transaktionen", href: "/transactions", icon: ReceiptText, show: true },

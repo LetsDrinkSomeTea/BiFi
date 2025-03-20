@@ -35,7 +35,7 @@ export function TransactionsCard({transactions, buyablesMap}: TransactionsCardPr
                                         locale: de,
                                     })}
                                 </div>
-                                <div className="text-sm text-foreground flex-1">{buyableName}</div>
+                                <div className="text-sm text-foreground flex-1">{buyableName} <strong>{transaction.isJackpot && "(Jackpot)"}</strong> <strong>{transaction.groupId && "(Gruppe)"}</strong></div>
                                 <div
                                     className={
                                         transaction.amount < 0

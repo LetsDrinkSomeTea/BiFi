@@ -75,7 +75,7 @@ export function TransactionsTableCard(args: TransactionsCardProps) {
                   "Einzahlung";
                 return (
                   <TableRow key={transaction.id}>
-                    {args.variant == "purchases" && <TableCell>{buyableName}</TableCell>}
+                    {args.variant == "purchases" && <TableCell>{buyableName} <strong>{transaction.isJackpot && "(Jackpot)"}</strong> <strong>{transaction.groupId && "(Gruppe)"}</strong></TableCell>}
                     <TableCell className={transaction.amount < 0 ? "text-destructive" : "text-primary"}>
                       {transaction.amount.toFixed(2)}€
                     </TableCell>

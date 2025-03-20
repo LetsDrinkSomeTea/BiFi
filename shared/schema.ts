@@ -5,7 +5,7 @@ import {
   integer,
   boolean,
   timestamp,
-  real,
+  real, primaryKey,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -19,12 +19,45 @@ export const users = pgTable("users", {
   achievements: text("achievements").notNull().default("[]"),
 });
 
+export const groups = pgTable("groups", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+})
+
+export interface GroupWithUsers {
+  id: number,
+  name: string,
+  members: User[],
+}
+
+export const groupMembers = pgTable("group_members", {
+  groupId: integer("group_id").notNull().references(() => groups.id, {onDelete: 'cascade'}),
+  userId: integer("user_id").notNull().references(() => users.id, {onDelete: 'cascade'}),
+  status: text("status").notNull().default("invited"),
+}, (table) => [
+    primaryKey({ columns: [table.groupId, table.userId]})
+]);
+
+export interface GroupStatus {
+  id: string;
+  displayName: string;
+}
+
+export const groupStatuses: GroupStatus[] =
+    [
+      {id: "invited", displayName: "Eingeladen"},
+      {id: "accepted", displayName: "Angenommen"},
+      {id: "rejected", displayName: "Abgelehnt"},
+    ];
+
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   amount: real("amount").notNull(),
   item: integer("item"),
   type: text("type").notNull(),
+  groupId: integer("group_id"),
+  isJackpot: boolean("is_jackpot").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -85,3 +118,5 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;
 export type Buyable = typeof buyables.$inferSelect;
+export type Group = typeof groups.$inferSelect;
+export type GroupMember = typeof groupMembers.$inferSelect;

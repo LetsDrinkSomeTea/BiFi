@@ -4,7 +4,7 @@ import {comparePasswords, hashPassword, setupAuth} from "./auth";
 import {storage} from "./storage";
 import {Achievement, achievements, checkForNewAchievements} from "@shared/achievements";
 import {calculateStatistics} from "@shared/statistics/utils";
-import { Buyable, LogInfo, Transaction, User } from '@shared/schema.ts'
+import {Buyable, GroupWithUsers, LogInfo, Transaction, User} from '@shared/schema.ts'
 function requireAuth(req: Request) {
   if (!req.isAuthenticated()) {
     throw new Error("Unauthorized");
@@ -17,8 +17,15 @@ function requireAdmin(req: Request) {
     throw new Error("Forbidden");
   }
 }
+async function requireGroupmember(req: Request, groupId:number) {
+  requireAuth(req);
+  if (isNaN(groupId)) throw new Error("Ungültige Gruppen-ID");
+  if(!await storage.isUserInGroup(req.user!.id, groupId)){
+    throw new Error("Forbidden");
+  }
+}
 
-async function purchase(userId: number, buyableId: number, multiplier: number) : Promise< {transaction: Transaction, user: User}> {
+async function purchase(userId: number, buyableId: number, multiplier: number, groupId: number | null = null, isJackpot: boolean = false) : Promise< {transaction: Transaction, user: User}> {
   const buyables = await storage.getAllBuyables();
   const buyablesMap = buyables.reduce<Record<number, Buyable>>((acc, buyable) => {
     acc[buyable.id] = buyable;
@@ -33,7 +40,9 @@ async function purchase(userId: number, buyableId: number, multiplier: number) :
     userId,
     amount: -buyable!.price*multiplier,
     item: buyable!.id,
-    type: "PURCHASE"
+    type: "PURCHASE",
+    groupId: groupId,
+    isJackpot: isJackpot
   });
 
   // Update balance
@@ -81,7 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       requireAuth(req);
       const userId = req.user!.id;
       const {buyableId, multiplier} = req.body;
-      const {transaction, user} = await purchase(userId, buyableId, multiplier);
+      const {transaction, user} = await purchase(userId, buyableId, multiplier, null, true);
       res.json({ transaction, user });
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
@@ -151,7 +160,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userId,
         amount,
         type: "DEPOSIT",
-        item: null
+        item: null,
+        groupId: null,
+        isJackpot: false
       });
 
       // Update user balance
@@ -419,6 +430,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: (err as Error).message });
     }
   })
+
+
+  // ---------------------- Gruppenverwaltung ----------------------
+
+// Gruppe erstellen
+  app.post("/api/groups", async (req, res) => {
+    try {
+      requireAuth(req);
+      const { name } = req.body;
+      if (!name) throw new Error("Gruppenname erforderlich");
+      const group = await storage.createGroup(name, req.user!.id);
+      res.json(group);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.get("/api/groups", async (req, res) => {
+    try {
+      requireAuth(req);
+      const groups = await storage.getGroups(req.user!.id);
+      const groupsWithUsers: GroupWithUsers[] = [];
+      for (let group of groups) {
+        const users = await storage.getGroupMembersAndInvitations(group.id);
+        groupsWithUsers.push({
+          id: group.id,
+          name: group.name,
+          members: users
+        })
+      }
+      res.json(groupsWithUsers);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  })
+
+  app.post("/api/groups/:groupId/purchase", async (req, res) => {
+    try{
+      requireAuth(req);
+      const groupId = parseInt(req.params.groupId);
+      await requireGroupmember(req, groupId);
+
+      const members: User[] = await storage.getGroupMembers(groupId);
+      const {buyableId} = req.body;
+      const multiplier = 1./members.length;
+      const result: { transaction: Transaction, user: User }[] = [];
+      for (const member of members) {
+        const {transaction, user} = await purchase(member.id, buyableId, multiplier, groupId, false);
+        result.push({transaction, user});
+      }
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+// Mitglieder einer Gruppe abrufen
+  app.get("/api/groups/:groupId/members", async (req, res) => {
+    try {
+      requireAuth(req);
+      const groupId = parseInt(req.params.groupId);
+      await requireGroupmember(req, groupId);
+      const members = await storage.getGroupMembersAndInvitations(groupId);
+      res.json(members);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+// Benutzer zu einer Gruppe einladen
+  app.post("/api/groups/:groupId/invite", async (req, res) => {
+    try {
+      requireAuth(req);
+      const groupId = parseInt(req.params.groupId);
+      await requireGroupmember(req, groupId);
+      const { username } = req.body;
+      const user = await storage.getUserByUsername(username);
+      if (!user) {throw new Error("Nutzer nicht gefunden");}
+      const invitation = await storage.inviteUserToGroup(groupId, user.id);
+      res.json(invitation);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+// Gruppen-Einladungen des eingeloggten Nutzers abrufen
+  app.get("/api/groups/invitations", async (req, res) => {
+    try {
+      requireAuth(req);
+      const userId = req.user!.id;
+      const invitations = await storage.getInvitations(userId);
+      res.json(invitations);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+// Einladung beantworten (annehmen oder ablehnen)
+  app.post("/api/groups/:groupId/respond", async (req, res) => {
+    try {
+      requireAuth(req);
+      const groupId = parseInt(req.params.groupId);
+      const { response } = req.body; // Erwartet "accepted" oder "rejected"
+      if (isNaN(groupId) || (response !== "accepted" && response !== "rejected"))
+        throw new Error("Ungültige Eingabe");
+      const updatedInvitation = await storage.respondToInvitation(groupId, req.user!.id, response);
+      res.json(updatedInvitation);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+// Gruppe verlassen
+  app.delete("/api/groups/:groupId/leave", async (req, res) => {
+    try {
+      requireAuth(req);
+      const groupId = parseInt(req.params.groupId);
+      await requireGroupmember(req, groupId);
+      await storage.leaveGroup(groupId, req.user!.id);
+      res.sendStatus(200);
+    } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
 
   return createServer(app);
 }
