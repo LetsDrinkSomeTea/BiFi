@@ -47,7 +47,9 @@ async function purchase(userId: number, buyableId: number, multiplier: number, g
 
   // Update balance
   const user = await storage.updateUserBalance(userId, transaction.amount);
-  await storage.updateBuyableStock(buyableId, -1);
+  if(groupId === null) {
+    await storage.updateBuyableStock(buyableId, -1);
+  }
 
   // Check and update achievements
   const transactions = await storage.getTransactions(userId);
@@ -480,6 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const {transaction, user} = await purchase(member.id, buyableId, multiplier, groupId, false);
         result.push({transaction, user});
       }
+      await storage.updateBuyableStock(buyableId, -1);
       res.json(result);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });

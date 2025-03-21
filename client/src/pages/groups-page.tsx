@@ -19,12 +19,13 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import {Beer, GlassWater, Plus, Trash2, UserPlus, Users, Wine} from "lucide-react";
+import {Beer, GlassWater, Plus, ReceiptText, Trash2, UserPlus, Users, Wine} from "lucide-react";
 import { MainNav } from "@/components/main-nav";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import {Group, Buyable, BuyablesMap, GroupWithUsers, UserWithStatus, groupStatusMap} from "@shared/schema";
+import {Group, Buyable, BuyablesMap, GroupWithUsers, UserWithStatus, groupStatusMap, Transaction} from "@shared/schema";
 import {BuyButton} from "@/components/ui/buy-button.tsx";
+import {TransactionsCard} from "@/components/transactions-card.tsx";
 
 export default function GroupsPage() {
     const { user } = useAuth();
@@ -126,6 +127,11 @@ export default function GroupsPage() {
         enabled: viewMembersGroupId !== null,
     });
 
+    const [viewTransactionsGroupId, setViewTransactionsGroupId] = useState<number | null>(null);
+    const { data: transactions, isLoading: transactionsLoading } = useQuery<Transaction[]>({
+        queryKey: ["/api/transactions"],
+    })
+
     // ----------------- Gruppeneinkäufe -----------------
     // Auswahl, für welche Gruppe einkaufen werden soll
     const [selectedGroupForPurchase, setSelectedGroupForPurchase] = useState<number | null>(null);
@@ -169,6 +175,7 @@ export default function GroupsPage() {
             return await apiRequest("POST", `/api/groups/${groupId}/purchase`, { buyableId});
         },
         onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["/api/transactions"]})
             toast({ title: "Einkauf erfolgreich" });
         },
     });
@@ -184,7 +191,7 @@ export default function GroupsPage() {
         }
     };
 
-    if (buyablesLoading || buyablesMapLoading || !buyablesMap || !buyables) {
+    if (buyablesLoading || buyablesMapLoading || !buyablesMap || !buyables || transactionsLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <div className="animate-pulse">Gruppen werden geladen...</div>
@@ -393,6 +400,14 @@ export default function GroupsPage() {
                                                         >
                                                             <UserPlus className="h-4 w-4" />
                                                         </Button>
+                                                        {/* Transaktionen anzeigen */}
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => setViewTransactionsGroupId(group.id)}
+                                                        >
+                                                            <ReceiptText/>
+                                                        </Button>
                                                         {/* Gruppe verlassen */}
                                                         <Button
                                                             variant="destructive"
@@ -487,6 +502,22 @@ export default function GroupsPage() {
                         </div>
                     </DialogContent>
                 </Dialog>
+
+                {/* Dialog: Gruppenmitglieder anzeigen */}
+                <Dialog
+                    open={viewTransactionsGroupId !== null && transactions !== null}
+                    onOpenChange={(open) => {
+                        if (!open) setViewTransactionsGroupId(null);
+                    }}
+                >
+                    <DialogTrigger asChild>
+                        <span />
+                    </DialogTrigger>
+                    <DialogContent>
+                        <TransactionsCard transactions={transactions!.filter((t) => t.groupId == viewTransactionsGroupId)} buyablesMap={buyablesMap}/>
+                    </DialogContent>
+                </Dialog>
+
                 {selectedGroupForDeletion && (
                     <Dialog
                         open={isDeleteDialogOpen}
