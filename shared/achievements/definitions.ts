@@ -676,9 +676,9 @@ defineAchievement({
     id: "gambling",
     name: "Die Sonne lacht",
     description: "Spiele um eine Produkt anstatt es zu kaufen",
-    check: ({currentTransaction, buyablesMap}) => {
+    check: ({currentTransaction}) => {
       if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
-      return Math.abs(currentTransaction.amount + buyablesMap[currentTransaction.item!].price) > EPSILON;
+      return currentTransaction.isJackpot;
     }
   }),
   defineAchievement({
@@ -699,4 +699,22 @@ defineAchievement({
       return Math.abs(currentTransaction.amount + (buyablesMap[currentTransaction.item!].price * 2)) < EPSILON;
     }
   }),
+  defineAchievement({
+    id: "wein_buddy",
+    name: "Wein-Buddy",
+    description: "Kaufe in einer Gruppe einen Wein",
+    check: ({currentTransaction, buyablesMap}) => {
+      if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
+      return currentTransaction!.groupId !== null && currentTransaction.item === 3 && buyablesMap[currentTransaction.item!].price > currentTransaction.amount;
+    }
+  }),
+  defineAchievement({
+    id: "party",
+    name: "Party",
+    description: "Kaufe in einer Gruppe ein",
+    check: ({currentTransaction}) => {
+      if (!currentTransaction || currentTransaction.type !== "PURCHASE") return false;
+      return currentTransaction!.groupId !== null;
+    }
+  })
 ];

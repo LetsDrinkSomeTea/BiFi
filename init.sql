@@ -16,8 +16,7 @@ CREATE TABLE "group_members" (
 --> statement-breakpoint
 CREATE TABLE "groups" (
                           "id" serial PRIMARY KEY NOT NULL,
-                          "name" text NOT NULL,
-                          CONSTRAINT "groups_name_unique" UNIQUE("name")
+                          "name" text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "transactions" (
@@ -46,7 +45,6 @@ ALTER TABLE "group_members" ADD CONSTRAINT "group_members_user_id_users_id_fk" F
 
 INSERT INTO "users" ("username", "password", "balance", "is_admin", "achievements")
 VALUES ('admin', 'bc26ab1c7734c445ae10a6531519b2fdae561e65d729104ecbef719ee8aa3c3431ead4e6c4530b9c4bb4443696d2032029cfda66e6a8b021f79b7e4af58a0bc8.00c7ab5a06f524966640d0abb96d3947', 0, true, '[]');
-
 
 INSERT INTO "buyables" ("name", "price", "category", "stock", "deleted")
 VALUES ('Bier', 1.0, 'alcohol', 20, false),

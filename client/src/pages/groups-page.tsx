@@ -19,11 +19,11 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import {Beer, GlassWater, Plus, UserPlus, Users, Wine} from "lucide-react";
+import {Beer, GlassWater, Plus, Trash2, UserPlus, Users, Wine} from "lucide-react";
 import { MainNav } from "@/components/main-nav";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import {Group, User, Buyable, BuyablesMap, GroupWithUsers} from "@shared/schema";
+import {Group, Buyable, BuyablesMap, GroupWithUsers, UserWithStatus, groupStatusMap} from "@shared/schema";
 import {BuyButton} from "@/components/ui/buy-button.tsx";
 
 export default function GroupsPage() {
@@ -80,6 +80,8 @@ export default function GroupsPage() {
     });
 
     // ----------------- Gruppe verlassen -----------------
+    const [selectedGroupForDeletion, setSelectedGroupForDeletion] = useState<Group | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const leaveGroupMutation = useMutation({
         mutationFn: async (groupId: number) => {
             return await apiRequest("DELETE", `/api/groups/${groupId}/leave`);
@@ -87,6 +89,8 @@ export default function GroupsPage() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
             toast({ title: "Gruppe verlassen" });
+            setSelectedGroupForDeletion(null);
+            setIsDeleteDialogOpen(false);
         },
     });
 
@@ -105,7 +109,9 @@ export default function GroupsPage() {
         }) => {
             return await apiRequest("POST", `/api/groups/${groupId}/invite`, { username });
         },
-        onSuccess: () => {
+        onSuccess: (groupId) => {
+            queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+            queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/members`] });
             toast({ title: "Einladung gesendet" });
             setInviteUsername("");
             setInviteGroupId(null);
@@ -115,7 +121,7 @@ export default function GroupsPage() {
 
     // ----------------- Mitglieder einer Gruppe anzeigen -----------------
     const [viewMembersGroupId, setViewMembersGroupId] = useState<number | null>(null);
-    const { data: groupMembers } = useQuery<User[]>({
+    const { data: groupMembers } = useQuery<UserWithStatus[]>({
         queryKey: [`/api/groups/${viewMembersGroupId}/members`],
         enabled: viewMembersGroupId !== null,
     });
@@ -123,6 +129,12 @@ export default function GroupsPage() {
     // ----------------- Gruppeneinkäufe -----------------
     // Auswahl, für welche Gruppe einkaufen werden soll
     const [selectedGroupForPurchase, setSelectedGroupForPurchase] = useState<number | null>(null);
+    React.useEffect(() => {
+        if (myGroups && myGroups.length > 0 && selectedGroupForPurchase === null) {
+            setSelectedGroupForPurchase(myGroups[0].id);
+        }
+    }, [myGroups, selectedGroupForPurchase]);
+
     // Buyables laden (gleich wie in der Home‑Page)
     const { data: buyables, isLoading: buyablesLoading } = useQuery<Buyable[]>({
         queryKey: ["/api/buyables"]
@@ -240,7 +252,7 @@ export default function GroupsPage() {
                     </Card>
                 )}
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    <Card>
+                    {myGroups && myGroups.length > 0 && (<Card>
                         <CardHeader>
                             <CardTitle>Gruppeneinkauf</CardTitle>
                             <div className="flex gap-4 items-center">
@@ -252,7 +264,6 @@ export default function GroupsPage() {
                                         setSelectedGroupForPurchase(e.target.value ? parseInt(e.target.value) : null)
                                     }
                                 >
-                                    <option value="">Gruppe auswählen</option>
                                     {myGroups &&
                                         myGroups.map((group) => (
                                             <option key={group.id} value={group.id}>
@@ -308,8 +319,8 @@ export default function GroupsPage() {
                                 </div>
                             )}
                         </CardContent>
-                    </Card>
-                    <Card className="lg:col-span-2">
+                    </Card>)}
+                    <Card className={myGroups && myGroups.length > 0 ? "lg:col-span-2": "lg:col-span-3"}>
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle>Meine Gruppen</CardTitle>
@@ -355,7 +366,12 @@ export default function GroupsPage() {
                                     <TableBody>
                                         {myGroups.map((group) => (
                                             <TableRow key={group.id}>
-                                                <TableCell className="font-medium">{group.name}  <span className="text-muted-foreground">({group.members.map((m) => m.username).sort().join(", ")})</span></TableCell>
+                                                <TableCell className="font-medium">{group.name}
+                                                    <span className="text-muted-foreground"> ({
+                                                        group.members.slice(0,5).map((m) => m.username).sort().join(", ")
+                                                    }{
+                                                        group.members.length > 5 && ", ..."
+                                                })</span></TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
                                                         {/* Mitglieder anzeigen */}
@@ -381,9 +397,9 @@ export default function GroupsPage() {
                                                         <Button
                                                             variant="destructive"
                                                             size="sm"
-                                                            onClick={() => leaveGroupMutation.mutate(group.id)}
+                                                            onClick={() => {setSelectedGroupForDeletion(group); setIsDeleteDialogOpen(true);}}
                                                         >
-                                                            Verlassen
+                                                            <Trash2 className="h-4 w-4"/>
                                                         </Button>
                                                     </div>
                                                 </TableCell>
@@ -453,12 +469,14 @@ export default function GroupsPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Benutzername</TableHead>
+                                            <TableHead>Status</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {groupMembers.map((member) => (
                                             <TableRow key={member.id}>
                                                 <TableCell>{member.username}</TableCell>
+                                                <TableCell className={member.status == "accepted" ? "text-primary" : "text-muted-foreground"}>{groupStatusMap[member.status]}</TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
@@ -469,6 +487,42 @@ export default function GroupsPage() {
                         </div>
                     </DialogContent>
                 </Dialog>
+                {selectedGroupForDeletion && (
+                    <Dialog
+                        open={isDeleteDialogOpen}
+                        onOpenChange={(open) => {
+                            if (!open) {
+                                setSelectedGroupForDeletion(null);
+                            }
+                            setIsDeleteDialogOpen(open);
+                        }}
+                    >
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Löschen bestätigen</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4 pt-4">
+                                <p>
+                                    Bist du sicher, dass du die Gruppe <strong>{selectedGroupForDeletion.name}</strong> löschen möchtest?
+                                </p>
+                                <div className="flex justify-end gap-2">
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline">Abbrechen</Button>
+                                    </DialogTrigger>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => {
+                                            leaveGroupMutation.mutate(selectedGroupForDeletion.id);
+                                        }}
+                                        disabled={leaveGroupMutation.isPending}
+                                    >
+                                        Löschen
+                                    </Button>
+                                </div>
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </main>
         </div>
     );

@@ -21,13 +21,17 @@ export const users = pgTable("users", {
 
 export const groups = pgTable("groups", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
+  name: text("name").notNull(),
 })
 
 export interface GroupWithUsers {
   id: number,
   name: string,
   members: User[],
+}
+
+export interface UserWithStatus extends User{
+  status: string,
 }
 
 export const groupMembers = pgTable("group_members", {
@@ -49,6 +53,10 @@ export const groupStatuses: GroupStatus[] =
       {id: "accepted", displayName: "Angenommen"},
       {id: "rejected", displayName: "Abgelehnt"},
     ];
+export const groupStatusMap: Record<string, string> = groupStatuses.reduce((map, status) => {
+  map[status.id] = status.displayName;
+  return map;
+}, {} as Record<string, string>);
 
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),

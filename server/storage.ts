@@ -11,7 +11,7 @@ import {
   type Transaction,
   transactions,
   type User,
-  users
+  users, UserWithStatus
 } from '@shared/schema';
 import {type Achievement} from '@shared/achievements';
 import {and} from "drizzle-orm/sql/expressions/conditions";
@@ -266,7 +266,7 @@ export class DrizzleStorage implements IStorage {
     return results as User[];
   }
 
-  async getGroupMembersAndInvitations(groupId: number): Promise<User[]> {
+  async getGroupMembersAndInvitations(groupId: number): Promise<UserWithStatus[]> {
     const results = await this.db
         .select({
           id: users.id,
@@ -275,11 +275,12 @@ export class DrizzleStorage implements IStorage {
           balance: users.balance,
           isAdmin: users.isAdmin,
           achievements: users.achievements,
+          status: groupMembers.status,
         })
         .from(groupMembers)
         .innerJoin(users, eq(groupMembers.userId, users.id))
         .where(eq(groupMembers.groupId, groupId));
-    return results as User[];
+    return results as UserWithStatus[];
   }
 
 // Hole eine Gruppe anhand der Gruppen-ID

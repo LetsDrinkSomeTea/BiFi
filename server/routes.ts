@@ -453,7 +453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const groups = await storage.getGroups(req.user!.id);
       const groupsWithUsers: GroupWithUsers[] = [];
       for (let group of groups) {
-        const users = await storage.getGroupMembersAndInvitations(group.id);
+        const users = await storage.getGroupMembers(group.id);
         groupsWithUsers.push({
           id: group.id,
           name: group.name,
