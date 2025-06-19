@@ -44,6 +44,7 @@ export default function LogPage() {
                     <TableRow>
                       <TableHead className="px-4 py-2 border-b text-left">Transaction ID</TableHead>
                       <TableHead className="px-4 py-2 border-b text-left">User (ID)</TableHead>
+                      <TableHead className="px-4 py-2 border-b text-left">Group (ID)</TableHead>
                       <TableHead className="px-4 py-2 border-b text-left">Betrag</TableHead>
                       <TableHead className="px-4 py-2 border-b text-left">Typ</TableHead>
                       <TableHead className="px-4 py-2 border-b text-left">Datum</TableHead>
@@ -53,9 +54,10 @@ export default function LogPage() {
                     {log.map((entry) => (
                       <TableRow key={entry.transaction.id}>
                         <TableCell className="px-4 py-2 border-b">{entry.transaction.id}</TableCell>
-                        <TableCell className="px-4 py-2 border-b">{entry.user?.username} ({entry.user.id})</TableCell>
-                        <TableCell className="px-4 py-2 border-b">{entry.transaction.amount}</TableCell>
-                        <TableCell className="px-4 py-2 border-b">{entry.transaction.type}</TableCell>
+                        <TableCell className="px-4 py-2 border-b">{entry.user?.username || "deleted"} ({entry.user?.id || "NaN"})</TableCell>
+                        <TableCell className="px-4 py-2 border-b">{entry.transaction.groupId || "-"}</TableCell>
+                        <TableCell className="px-4 py-2 border-b">{entry.transaction.amount.toFixed(2)}€</TableCell>
+                        <TableCell className="px-4 py-2 border-b">{entry.transaction.isJackpot ? "JACKPOT" : entry.transaction.type}</TableCell>
                         <TableCell className="px-4 py-2 border-b">
                           {new Date(entry.transaction.createdAt).toLocaleString()}
                         </TableCell>
