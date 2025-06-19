@@ -91,9 +91,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try{
       requireAuth(req);
       const userId = req.user!.id;
-      const {buyableId, multiplier} = req.body;
+      if (!req.user!.allowedJackpot) {
+        throw new Error("Jackpot is not allowed for this user");
+      }
+      const {buyableId} = req.body
+      const rand = Math.floor(Math.random() * 20); // 0-19 (20 possible values, excluding 1.0)
+      const multiplier = rand >= 10 ? (rand + 1) / 10 : rand / 10; // If >= 10, add 1 to skip 1.0
       const {transaction, user} = await purchase(userId, buyableId, multiplier, null, true);
-      res.json({ transaction, user });
+      res.json({ transaction, user , multiplier});
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
     }
@@ -250,8 +255,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/admin/users/:id", async (req, res) => {
     try {
       requireAdmin(req);
-      const { isAdmin } = req.body;
-      const user = await storage.updateUser(parseInt(req.params.id), { isAdmin });
+      const { isAdmin, allowedJackpot } = req.body;
+      const user = await storage.updateUser(parseInt(req.params.id), { isAdmin, allowedJackpot });
       res.json(user);
     } catch (err) {
       res.status(400).json({ error: (err as Error).message });
@@ -274,6 +279,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedUser = await storage.updateUserPassword(user.id, await hashPassword(newPassword));
       res.json(updatedUser);
     } catch (err) {
+      res.status(400).json({ error: (err as Error).message });
+    }
+  });
+
+  app.post("/api/change-username", async (req, res) => {
+    try {
+      requireAuth(req);
+      const { newUsername } = req.body;
+      const user = req.user!;
+            // Update username
+      const updatedUser = await storage.updateUser(user.id, { username: newUsername });
+      res.json(updatedUser);
+    } catch (err: any) {
+      if (err.message.includes("duplicate key")) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
       res.status(400).json({ error: (err as Error).message });
     }
   });

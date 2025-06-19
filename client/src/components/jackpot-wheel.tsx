@@ -5,13 +5,13 @@ import {Buyable} from "@shared/schema.ts";
 
 export interface JackpotWheelProps {
     onSpinStart: () => void;
-    onSpinComplete: (multiplier: number) => void;
+    onSpinComplete: () => void;
     buyable: Buyable;
+    multiplier: number | null;
+    isSpinning: boolean;
 }
 
-const JackpotWheel = ({onSpinStart, onSpinComplete, buyable}: JackpotWheelProps) => {
-    // Erzeuge 21 Segmente von "0%" bis "200%"
-
+const JackpotWheel = ({onSpinStart, onSpinComplete, buyable, multiplier, isSpinning}: JackpotWheelProps) => {
     const [spin, setSpin] = React.useState(false);
     const [startIndex, setStartIndex] = React.useState(0);
     const [prize, setPrize] = React.useState(0);
@@ -21,28 +21,58 @@ const JackpotWheel = ({onSpinStart, onSpinComplete, buyable}: JackpotWheelProps)
     const mixedValues = [0, 2, 0.1, 1.9, 0.2, 1.8, 0.3, 1.7, 0.4, 1.6, 0.5, 1.5, 0.6, 1.4, 0.7, 1.3, 0.8, 1.2, 0.9, 1.1]
     const segments = mixedValues.map(
         value => ({
-            option: `${(buyablePrice * value).toFixed(2)}€`, value
+            option: `${(buyablePrice * value).toFixed(2)}€`,
+            value
         })
     );
 
-    // Wird aufgerufen, wenn der Spin abgeschlossen ist.
-    // Wir wandeln den ausgewählten Prozentsatz in einen Multiplikator um.
+    // Watch for multiplier changes from the server
+    React.useEffect(() => {
+        if (multiplier !== null && isSpinning) {
+            // Find the closest matching value in our segments
+            let closestIndex = 0;
+            let smallestDiff = Math.abs(mixedValues[0] - multiplier);
+
+            for (let i = 1; i < mixedValues.length; i++) {
+                const diff = Math.abs(mixedValues[i] - multiplier);
+                if (diff < smallestDiff) {
+                    smallestDiff = diff;
+                    closestIndex = i;
+                }
+            }
+
+            setPrize(closestIndex);
+            setSpin(true);
+        }
+    }, [multiplier, isSpinning]);
+
+    // Reset spin state when not spinning
+    React.useEffect(() => {
+        if (!isSpinning && spin) {
+            setSpin(false);
+        }
+    }, [isSpinning, spin]);
+
     const handleSpinFinish = () => {
         setSpin(false);
         setStartIndex(prize);
-        onSpinComplete(segments[prize].value);
+        onSpinComplete();
     };
 
     const handleSpin = () => {
-        if (spin) return;
+        if (spin || isSpinning) return;
         onSpinStart();
-        setPrize(Math.floor(Math.random() * segments.length));
-        setSpin(true);
     }
 
     return (
         <>
-            <Button onClick={handleSpin} disabled={spin} className={ spin ? "animate-pulse" : ""}>{spin?"SPINNING ..." : "SPIN"}</Button>
+            <Button
+                onClick={handleSpin}
+                disabled={spin || isSpinning}
+                className={spin || isSpinning ? "animate-pulse" : ""}
+            >
+                {spin ? "SPINNING..." : isSpinning ? "LOADING..." : "SPIN"}
+            </Button>
             <Wheel
                 data={segments}
                 onStopSpinning={handleSpinFinish}
@@ -56,7 +86,6 @@ const JackpotWheel = ({onSpinStart, onSpinComplete, buyable}: JackpotWheelProps)
             />
         </>
     )
-
 };
 
 export default JackpotWheel;

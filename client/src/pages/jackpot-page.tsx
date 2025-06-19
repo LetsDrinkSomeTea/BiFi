@@ -15,7 +15,7 @@ import {Gem} from "lucide-react";
 
 export default function JackpotPage() {
     const { user } = useAuth();
-    if (!user) {
+    if (!user || !user.allowedJackpot) {
         return <div>Keine Berechtigung</div>;
     }
 
@@ -45,29 +45,34 @@ export default function JackpotPage() {
         }
     }, [availableBuyables, selectedBuyableId]);
 
-    // Jackpot mutation: sends a jackpot play to a new endpoint
-    const jackpotMutation = useMutation({
-        mutationFn: async (args: { buyableId: number; multiplier: number }) => {
-            const res = await apiRequest("POST", "/api/jackpot", args);
-            return res.json();
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
-            queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-        },
-    });
-
     const [spinning, setSpinning] = React.useState(false);
     const [resultDialogOpen, setResultDialogOpen] = React.useState(false);
     const [resultMultiplier, setResultMultiplier] = React.useState<number | null>(null);
+    const [wheelMultiplier, setWheelMultiplier] = React.useState<number | null>(null);
+
+    const jackpotMutation = useMutation({
+        mutationFn: async (args: { buyableId: number }) => {
+            const res = await apiRequest("POST", "/api/jackpot", args);
+            return res.json() as Promise<{ transaction: Transaction; user: typeof user; multiplier: number }>;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+            setResultMultiplier(data.multiplier);
+            setWheelMultiplier(data.multiplier); // This triggers the wheel to spin to the correct position
+        },
+        onError: () => {
+            setSpinning(false); // Reset spinning state on error
+        },
+    });
 
     const onSpinStart = () => {
         setSpinning(true);
+        setWheelMultiplier(null); // Reset wheel multiplier
+        jackpotMutation.mutate({ buyableId: selectedBuyableId! });
     };
 
-    const onSpinComplete = (multiplier: number) => {
-        setResultMultiplier(multiplier);
-        jackpotMutation.mutate({ buyableId: selectedBuyableId!, multiplier });
+    const onSpinComplete = () => {
         setSpinning(false);
         setResultDialogOpen(true);
     };
@@ -92,7 +97,7 @@ export default function JackpotPage() {
                     {/* Jackpot-Bereich */}
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Jackpot</CardTitle>
+                            <CardTitle>Jackpot</CardTitle>
                             <Gem className="h-5 w-5 text-muted-foreground"/>
                         </CardHeader>
                         <CardContent>
@@ -114,6 +119,8 @@ export default function JackpotPage() {
                                     onSpinStart={onSpinStart}
                                     onSpinComplete={onSpinComplete}
                                     buyable={selectedBuyable}
+                                    multiplier={wheelMultiplier}
+                                    isSpinning={spinning}
                                 />
                             </div>
                         </CardContent>
@@ -134,7 +141,7 @@ export default function JackpotPage() {
                             </CardContent>
                         </Card>
                         <div className="row-span-2 grid gap-4">
-                        <TransactionsCard transactions={transactions} buyablesMap={buyablesMap} />
+                            <TransactionsCard transactions={transactions} buyablesMap={buyablesMap} />
                         </div>
                     </div>
                     <AchievementsCard user={user} />

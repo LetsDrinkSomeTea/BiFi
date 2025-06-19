@@ -9,14 +9,14 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    #ports:           # Only for local debugging
-    #  - "5432:5432"
+    ports:           # Only for local debugging
+      - "5432:5432"
 
   session-db:
     image: redis:7.4.2
     restart: unless-stopped
-    #ports:           # Only for local debugging
-    #  - "6379:6379"
+    ports:           # Only for local debugging
+      - "6379:6379"
 
   app:
     build: .

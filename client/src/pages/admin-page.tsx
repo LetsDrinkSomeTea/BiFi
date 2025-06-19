@@ -18,6 +18,8 @@ import {
   CreditCard,
   ShieldCheck,
   Plus,
+  Gem,
+  Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +33,7 @@ import {
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { MainNav } from "@/components/main-nav";
 
 export default function AdminPage() {
@@ -48,6 +50,9 @@ export default function AdminPage() {
     queryKey: ["/api/users"],
   });
 
+  // State for search
+  const [searchQuery, setSearchQuery] = useState("");
+
   // State for dialog forms
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [depositAmount, setDepositAmount] = useState("");
@@ -63,6 +68,21 @@ export default function AdminPage() {
   // New state variables for delete confirmation dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedUserForDeletion, setSelectedUserForDeletion] = useState<User | null>(null);
+
+  // Filter users based on search query
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+
+    const sorted = users.sort((a, b) => a.username.localeCompare(b.username));
+
+    if (!searchQuery.trim()) {
+      return sorted;
+    }
+
+    return sorted.filter(user =>
+        user.username.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [users, searchQuery]);
 
   const depositMutation = useMutation({
     mutationFn: async ({ userId, amount }: { userId: number; amount: number }) => {
@@ -127,6 +147,16 @@ export default function AdminPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({ title: "Benutzerrolle aktualisiert" });
+    },
+  });
+
+  const toggleJackpotMutation = useMutation({
+    mutationFn: async ({ userId, allowedJackpot }: { userId: number; allowedJackpot: boolean }) => {
+      await apiRequest("PATCH", `/api/admin/users/${userId}`, { allowedJackpot });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: "Jackpot Zugang aktualisiert" });
     },
   });
 
@@ -195,6 +225,24 @@ export default function AdminPage() {
               </div>
             </CardHeader>
             <CardContent>
+              {/* Search Bar */}
+              <div className="mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                      placeholder="Benutzer suchen..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                  />
+                </div>
+                {searchQuery && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      {filteredUsers.length} von {users?.length || 0} Benutzern gefunden
+                    </p>
+                )}
+              </div>
+
               {/* Desktop Table View */}
               <div className="hidden md:block">
                 <Table>
@@ -208,219 +256,44 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users
-                        ?.sort((a, b) => a.username.localeCompare(b.username))
-                        .map((u) => {
-                          const achievements = JSON.parse(u.achievements);
-                          return (
-                              <TableRow key={u.id}>
-                                <TableCell className="font-medium">{u.username}</TableCell>
-                                <TableCell className={u.balance < 0 ? "text-destructive" : "text-primary"}>
-                                  €{u.balance.toFixed(2)}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={u.isAdmin ? "default" : "secondary"}>
-                                    {u.isAdmin ? "Admin" : "Benutzer"}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex flex-wrap gap-1">
-                                    {achievements.map((achievement: any) => (
-                                        <Badge
-                                            key={achievement.id}
-                                            variant="outline"
-                                            className="text-xs hover:bg-accent cursor-help"
-                                            title={`${achievement.description} - Freigeschaltet: ${
-                                                achievement.unlockedAt
-                                                    ? new Date(achievement.unlockedAt).toLocaleString()
-                                                    : "Noch nicht"
-                                            }`}
-                                        >
-                                          {achievement.name}
-                                        </Badge>
-                                    ))}
-                                    {achievements.length === 0 && (
-                                        <span className="text-xs text-muted-foreground">
-                                  Noch keine Erfolge
-                                </span>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    {/* Deposit Dialog */}
-                                    <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>
-                                      <DialogTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            onClick={() => {
-                                              setSelectedUser(u);
-                                              setIsDepositDialogOpen(true);
-                                            }}
-                                        >
-                                          <CreditCard className="h-4 w-4" />
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent>
-                                        <DialogHeader>
-                                          <DialogTitle>
-                                            Geld einzahlen - {selectedUser?.username}
-                                          </DialogTitle>
-                                        </DialogHeader>
-                                        <div className="space-y-4 pt-4">
-                                          <Input
-                                              type="number"
-                                              placeholder="Betrag in €"
-                                              value={depositAmount}
-                                              onChange={(e) => setDepositAmount(e.target.value)}
-                                          />
-                                          <Button
-                                              className="w-full"
-                                              onClick={() => {
-                                                if (selectedUser) {
-                                                  depositMutation.mutate({
-                                                    userId: selectedUser.id,
-                                                    amount: parseFloat(depositAmount),
-                                                  });
-                                                }
-                                              }}
-                                              disabled={depositMutation.isPending}
-                                          >
-                                            Einzahlen
-                                          </Button>
-                                        </div>
-                                      </DialogContent>
-                                    </Dialog>
-
-                                    {/* Reset Password Dialog */}
-                                    <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
-                                      <DialogTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            onClick={() => {
-                                              setSelectedUser(u);
-                                              setIsResetPasswordDialogOpen(true);
-                                            }}
-                                        >
-                                          <Key className="h-4 w-4" />
-                                        </Button>
-                                      </DialogTrigger>
-                                      <DialogContent>
-                                        <DialogHeader>
-                                          <DialogTitle>
-                                            Passwort zurücksetzen - {selectedUser?.username}
-                                          </DialogTitle>
-                                        </DialogHeader>
-                                        <div className="space-y-4 pt-4">
-                                          <Input
-                                              type="password"
-                                              placeholder="Neues Passwort"
-                                              value={newPassword}
-                                              onChange={(e) => setNewPassword(e.target.value)}
-                                          />
-                                          <Button
-                                              className="w-full"
-                                              onClick={() => {
-                                                if (selectedUser) {
-                                                  resetPasswordMutation.mutate({
-                                                    userId: selectedUser.id,
-                                                    newPassword,
-                                                  });
-                                                }
-                                              }}
-                                              disabled={resetPasswordMutation.isPending}
-                                          >
-                                            Passwort zurücksetzen
-                                          </Button>
-                                        </div>
-                                      </DialogContent>
-                                    </Dialog>
-
-                                    {/* Toggle Admin Status */}
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => {
-                                          if (user.id !== u.id) {
-                                            toggleAdminMutation.mutate({
-                                              userId: u.id,
-                                              isAdmin: !u.isAdmin,
-                                            });
-                                          }
-                                        }}
-                                        disabled={user.id === u.id}
-                                    >
-                                      <ShieldCheck className={`h-4 w-4 ${u.isAdmin ? "text-primary" : ""}`} />
-                                    </Button>
-
-                                    {/* Delete User Dialog Trigger */}
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={() => {
-                                          setSelectedUserForDeletion(u);
-                                          setIsDeleteDialogOpen(true);
-                                        }}
-                                        disabled={user.id === u.id}
-                                    >
-                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                          );
-                        })}
-                  </TableBody>
-                </Table>
-              </div>
-              {/* Mobile Card View */}
-              <div className="block md:hidden space-y-4">
-                {users
-                    ?.sort((a, b) => a.username.localeCompare(b.username))
-                    .map((u) => {
+                    {filteredUsers.map((u) => {
                       const achievements = JSON.parse(u.achievements);
                       return (
-                          <Card key={u.id}>
-                            <CardHeader>
-                              <CardTitle>{u.username}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <p className="flex items-center gap-2">
-                                <span className="text-muted-foreground">Kontostand:</span> €{u.balance.toFixed(2)}
-                              </p>
-                              <p className="flex items-center gap-2">
-                                <span className="text-muted-foreground">Rolle:</span>
-                                <Badge variant={u.isAdmin ? "default" : "secondary"}>
-                                  {u.isAdmin ? "Admin" : "Benutzer"}
-                                </Badge>
-                              </p>
-                              <div>
-                                <span className="text-muted-foreground text-sm">Erfolge:</span>
-                                <div className="flex flex-wrap gap-1 mt-1">
-                                  {achievements.map((achievement: any) => (
-                                      <Badge
-                                          key={achievement.id}
-                                          variant="outline"
-                                          className="text-xs hover:bg-accent cursor-help"
-                                          title={`${achievement.description} - Freigeschaltet: ${
-                                              achievement.unlockedAt
-                                                  ? new Date(achievement.unlockedAt).toLocaleString()
-                                                  : "Noch nicht"
-                                          }`}
-                                      >
-                                        {achievement.name}
-                                      </Badge>
-                                  ))}
-                                  {achievements.length === 0 && (
-                                      <span className="text-xs text-muted-foreground">
-                                Noch keine Erfolge
-                              </span>
-                                  )}
-                                </div>
+                          <TableRow key={u.id}>
+                            <TableCell className="font-medium">{u.username}</TableCell>
+                            <TableCell className={u.balance < 0 ? "text-destructive" : "text-primary"}>
+                              €{u.balance.toFixed(2)}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={u.isAdmin ? "default" : "secondary"}>
+                                {u.isAdmin ? "Admin" : "Benutzer"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {achievements.map((achievement: any) => (
+                                    <Badge
+                                        key={achievement.id}
+                                        variant="outline"
+                                        className="text-xs hover:bg-accent cursor-help"
+                                        title={`${achievement.description} - Freigeschaltet: ${
+                                            achievement.unlockedAt
+                                                ? new Date(achievement.unlockedAt).toLocaleString()
+                                                : "Noch nicht"
+                                        }`}
+                                    >
+                                      {achievement.name}
+                                    </Badge>
+                                ))}
+                                {achievements.length === 0 && (
+                                    <span className="text-xs text-muted-foreground">
+                                  Noch keine Erfolge
+                                </span>
+                                )}
                               </div>
-                              <div className="flex justify-end gap-2 mt-2">
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
                                 {/* Deposit Dialog */}
                                 <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>
                                   <DialogTrigger asChild>
@@ -528,6 +401,20 @@ export default function AdminPage() {
                                   <ShieldCheck className={`h-4 w-4 ${u.isAdmin ? "text-primary" : ""}`} />
                                 </Button>
 
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                      toggleJackpotMutation.mutate({
+                                        userId: u.id,
+                                        allowedJackpot: !u.allowedJackpot,
+                                      });
+                                    }
+                                    }
+                                >
+                                  <Gem className={`h-4 w-4 ${u.allowedJackpot ? "text-primary" : ""}`} />
+                                </Button>
+
                                 {/* Delete User Dialog Trigger */}
                                 <Button
                                     variant="outline"
@@ -541,10 +428,181 @@ export default function AdminPage() {
                                   <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                               </div>
-                            </CardContent>
-                          </Card>
+                            </TableCell>
+                          </TableRow>
                       );
                     })}
+                  </TableBody>
+                </Table>
+              </div>
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-4">
+                {filteredUsers.map((u) => {
+                  const achievements = JSON.parse(u.achievements);
+                  return (
+                      <Card key={u.id}>
+                        <CardHeader>
+                          <CardTitle>{u.username}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="flex items-center gap-2">
+                            <span className="text-muted-foreground">Kontostand:</span> €{u.balance.toFixed(2)}
+                          </p>
+                          <p className="flex items-center gap-2">
+                            <span className="text-muted-foreground">Rolle:</span>
+                            <Badge variant={u.isAdmin ? "default" : "secondary"}>
+                              {u.isAdmin ? "Admin" : "Benutzer"}
+                            </Badge>
+                          </p>
+                          <div>
+                            <span className="text-muted-foreground text-sm">Erfolge:</span>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {achievements.map((achievement: any) => (
+                                  <Badge
+                                      key={achievement.id}
+                                      variant="outline"
+                                      className="text-xs hover:bg-accent cursor-help"
+                                      title={`${achievement.description} - Freigeschaltet: ${
+                                          achievement.unlockedAt
+                                              ? new Date(achievement.unlockedAt).toLocaleString()
+                                              : "Noch nicht"
+                                      }`}
+                                  >
+                                    {achievement.name}
+                                  </Badge>
+                              ))}
+                              {achievements.length === 0 && (
+                                  <span className="text-xs text-muted-foreground">
+                                Noch keine Erfolge
+                              </span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2 mt-2">
+                            {/* Deposit Dialog */}
+                            <Dialog open={isDepositDialogOpen} onOpenChange={setIsDepositDialogOpen}>
+                              <DialogTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                      setSelectedUser(u);
+                                      setIsDepositDialogOpen(true);
+                                    }}
+                                >
+                                  <CreditCard className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>
+                                    Geld einzahlen - {selectedUser?.username}
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4 pt-4">
+                                  <Input
+                                      type="number"
+                                      placeholder="Betrag in €"
+                                      value={depositAmount}
+                                      onChange={(e) => setDepositAmount(e.target.value)}
+                                  />
+                                  <Button
+                                      className="w-full"
+                                      onClick={() => {
+                                        if (selectedUser) {
+                                          depositMutation.mutate({
+                                            userId: selectedUser.id,
+                                            amount: parseFloat(depositAmount),
+                                          });
+                                        }
+                                      }}
+                                      disabled={depositMutation.isPending}
+                                  >
+                                    Einzahlen
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+
+                            {/* Reset Password Dialog */}
+                            <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+                              <DialogTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => {
+                                      setSelectedUser(u);
+                                      setIsResetPasswordDialogOpen(true);
+                                    }}
+                                >
+                                  <Key className="h-4 w-4" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>
+                                    Passwort zurücksetzen - {selectedUser?.username}
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4 pt-4">
+                                  <Input
+                                      type="password"
+                                      placeholder="Neues Passwort"
+                                      value={newPassword}
+                                      onChange={(e) => setNewPassword(e.target.value)}
+                                  />
+                                  <Button
+                                      className="w-full"
+                                      onClick={() => {
+                                        if (selectedUser) {
+                                          resetPasswordMutation.mutate({
+                                            userId: selectedUser.id,
+                                            newPassword,
+                                          });
+                                        }
+                                      }}
+                                      disabled={resetPasswordMutation.isPending}
+                                  >
+                                    Passwort zurücksetzen
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+
+                            {/* Toggle Admin Status */}
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => {
+                                  if (user.id !== u.id) {
+                                    toggleAdminMutation.mutate({
+                                      userId: u.id,
+                                      isAdmin: !u.isAdmin,
+                                    });
+                                  }
+                                }}
+                                disabled={user.id === u.id}
+                            >
+                              <ShieldCheck className={`h-4 w-4 ${u.isAdmin ? "text-primary" : ""}`} />
+                            </Button>
+
+                            {/* Delete User Dialog Trigger */}
+                            <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => {
+                                  setSelectedUserForDeletion(u);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                                disabled={user.id === u.id}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import React, { useState } from "react";
 import { PasswordChangeDialog } from "@/components/password-change-dialog";
+import {UsernameChangeDialog} from "@/components/username-change-dialog.tsx";
 
 interface MainNavProps {
   currentPath: string;
@@ -29,13 +30,14 @@ export type MainNavItem = {
 
 export function MainNav({currentPath}: MainNavProps) {
   const { user, logoutMutation } = useAuth();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPasswordDialogOpen, setisPasswordDialogOpen] = useState(false);
+  const [isUsernameDialogOpen, setisUsernameDialogOpen] = useState(false);
 
 
   const navigation: MainNavItem[] = [
     { name: "Dashboard", href: "/", icon: Beer, show: true },
     { name: "Gruppen", href: "/groups", icon: Users, show: true },
-    { name: "Jackpot", href: "/jackpot", icon: Gem, show: true},
+    { name: "Jackpot", href: "/jackpot", icon: Gem, show: user?.allowedJackpot},
     { name: "Statistiken", href: "/stats", icon: BarChart, show: true },
     { name: "Transaktionen", href: "/transactions", icon: ReceiptText, show: true },
   ];
@@ -89,8 +91,12 @@ export function MainNav({currentPath}: MainNavProps) {
                 )}
                 {<SheetDescription className="text-muted-foreground">Account (<strong>{user?.username}</strong>)</SheetDescription>}
                 <PasswordChangeDialog
-                    isDialogOpen={isDialogOpen}
-                    setIsDialogOpen={setIsDialogOpen}
+                    isDialogOpen={isPasswordDialogOpen}
+                    setIsDialogOpen={setisPasswordDialogOpen}
+                />
+                <UsernameChangeDialog
+                    isDialogOpen={isUsernameDialogOpen}
+                    setIsDialogOpen={setisUsernameDialogOpen}
                 />
                 <Button
                     variant="ghost"

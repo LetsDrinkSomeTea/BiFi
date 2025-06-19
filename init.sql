@@ -37,14 +37,15 @@ CREATE TABLE "users" (
                          "balance" real DEFAULT 0 NOT NULL,
                          "is_admin" boolean DEFAULT false NOT NULL,
                          "achievements" text DEFAULT '[]' NOT NULL,
+                         "allowed_jackpot" boolean DEFAULT false NOT NULL,
                          CONSTRAINT "users_username_unique" UNIQUE("username")
 );
 --> statement-breakpoint
 ALTER TABLE "group_members" ADD CONSTRAINT "group_members_group_id_groups_id_fk" FOREIGN KEY ("group_id") REFERENCES "public"."groups"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "group_members" ADD CONSTRAINT "group_members_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 
-INSERT INTO "users" ("username", "password", "balance", "is_admin", "achievements")
-VALUES ('admin', 'bc26ab1c7734c445ae10a6531519b2fdae561e65d729104ecbef719ee8aa3c3431ead4e6c4530b9c4bb4443696d2032029cfda66e6a8b021f79b7e4af58a0bc8.00c7ab5a06f524966640d0abb96d3947', 0, true, '[]');
+INSERT INTO "users" ("username", "password", "balance", "is_admin", "achievements", "allowed_jackpot")
+VALUES ('admin', 'bc26ab1c7734c445ae10a6531519b2fdae561e65d729104ecbef719ee8aa3c3431ead4e6c4530b9c4bb4443696d2032029cfda66e6a8b021f79b7e4af58a0bc8.00c7ab5a06f524966640d0abb96d3947', 0, true, '[]', true);
 
 INSERT INTO "buyables" ("name", "price", "category", "stock", "deleted")
 VALUES ('Bier', 1.0, 'alcohol', 20, false),

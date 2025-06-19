@@ -53,7 +53,7 @@ export default function LogPage() {
                     {log.map((entry) => (
                       <TableRow key={entry.transaction.id}>
                         <TableCell className="px-4 py-2 border-b">{entry.transaction.id}</TableCell>
-                        <TableCell className="px-4 py-2 border-b">{entry.user.username} ({entry.user.id})</TableCell>
+                        <TableCell className="px-4 py-2 border-b">{entry.user?.username} ({entry.user.id})</TableCell>
                         <TableCell className="px-4 py-2 border-b">{entry.transaction.amount}</TableCell>
                         <TableCell className="px-4 py-2 border-b">{entry.transaction.type}</TableCell>
                         <TableCell className="px-4 py-2 border-b">

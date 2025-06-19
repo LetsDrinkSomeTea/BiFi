@@ -17,6 +17,7 @@ export const users = pgTable("users", {
   balance: real("balance").notNull().default(0),
   isAdmin: boolean("is_admin").notNull().default(false),
   achievements: text("achievements").notNull().default("[]"),
+  allowedJackpot: boolean("allowed_jackpot").notNull().default(false),
 });
 
 export const groups = pgTable("groups", {
